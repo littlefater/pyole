@@ -76,7 +76,7 @@ class OLEHeader:
         self.Signature = data[0x00:0x08]
         self.ole_logger.debug('Header.Signature: ' + self.Signature.encode('hex').upper())
         if self.Signature != '\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1':
-            self.raise_exception('OLEHeader.Signature verify failed.')
+            self._raise_exception('OLEHeader.Signature verify failed.')
         
         self.CLSID = data[0x08:0x18]
         self.ole_logger.debug('Header.CLSID: ' + self.CLSID.encode('hex').upper())
@@ -89,14 +89,14 @@ class OLEHeader:
         self.MajorVersion = struct.unpack('<H', data[0x1A:0x1C])[0]
         self.ole_logger.debug('Header.MajorVersion: ' + str(hex(self.MajorVersion)))
         if self.MajorVersion != 0x03 and self.MajorVersion != 0x04:
-            self.raise_exception('OLEHeader.MajorVersion has an abnormal value.')
+            self._raise_exception('OLEHeader.MajorVersion has an abnormal value.')
 
         self.ByteOrder = struct.unpack('<H', data[0x1C:0x1E])[0]
         if self.ByteOrder == 0xFFFE:
             self.ole_logger.debug('Header.ByteOrder: ' + str(hex(self.ByteOrder)) + ' (little-endian)')
         else:
             self.ole_logger.debug('Header.ByteOrder: ' + str(hex(self.ByteOrder)))
-            self.raise_exception('OLEHeader.ByteOrder has an abnormal value.')
+            self._raise_exception('OLEHeader.ByteOrder has an abnormal value.')
 
         self.SectorShift = struct.unpack('<H', data[0x1E:0x20])[0]
         if self.SectorShift == 0x09:
@@ -105,14 +105,14 @@ class OLEHeader:
             self.ole_logger.debug('Header.SectorShift: ' + str(hex(self.SectorShift)) + ' (4096 bytes)')
         else:
             self.ole_logger.debug('Header.SectorShift: ' + str(hex(self.SectorShift)))
-            self.raise_exception('OLEHeader.SectorShift has an abnormal value.')
+            self._raise_exception('OLEHeader.SectorShift has an abnormal value.')
 
         self.MiniSectorShift = struct.unpack('<H', data[0x20:0x22])[0]
         if self.MiniSectorShift == 0x06:
             self.ole_logger.debug('Header.MiniSectorShift: ' + str(hex(self.MiniSectorShift)) + ' (64 bytes)')
         else:
             self.ole_logger.debug('Header.MiniSectorShift: ' + str(hex(self.MiniSectorShift)))
-            self.raise_exception('OLEHeader.MiniSectorShift has an abnormal value.')
+            self._raise_exception('OLEHeader.MiniSectorShift has an abnormal value.')
 
         self.Reserved = data[0x22:0x28]
         self.ole_logger.debug('Header.Reserved: ' + self.Reserved.encode('hex').upper())
@@ -122,7 +122,7 @@ class OLEHeader:
         self.NumberOfDirectorySectors = struct.unpack('<I', data[0x28:0x2C])[0]
         self.ole_logger.debug('Header.NumberOfDirectorySectors: ' + str(hex(self.NumberOfDirectorySectors)))
         if self.NumberOfDirectorySectors != 0x0 and self.MajorVersion != 0x04:
-            self.raise_exception('OLEHeader.NumberOfDirectorySectors has an abnormal value.')
+            self._raise_exception('OLEHeader.NumberOfDirectorySectors has an abnormal value.')
         
         self.NumberOfFATSectors = struct.unpack('<I', data[0x2C:0x30])[0]
         self.ole_logger.debug('Header.NumberOfFATSectors: ' + str(hex(self.NumberOfFATSectors)))
@@ -130,7 +130,7 @@ class OLEHeader:
         self.FirstDirecotrySector = struct.unpack('<I', data[0x30:0x34])[0]
         self.ole_logger.debug('Header.FirstDirecotrySector: ' + str(hex(self.FirstDirecotrySector)))
         if self.FirstDirecotrySector == 0:
-            self.raise_exception('OLEHeader.FirstDirecotrySector is zero.')
+            self._raise_exception('OLEHeader.FirstDirecotrySector is zero.')
 
         self.TransactionSignatureNumber = struct.unpack('<I', data[0x34:0x38])[0]
         self.ole_logger.debug('Header.TransactionSignatureNumber: ' + str(hex(self.TransactionSignatureNumber)))
@@ -138,7 +138,7 @@ class OLEHeader:
         self.MiniStreamCutoffSize = struct.unpack('<I', data[0x38:0x3C])[0]
         self.ole_logger.debug('Header.MiniStreamCutoffSize: ' + str(hex(self.MiniStreamCutoffSize)))
         if self.MiniStreamCutoffSize != 0x1000:
-            self.raise_exception('OLEHeader.MiniStreamCutoffSize has an abnormal value.')
+            self._raise_exception('OLEHeader.MiniStreamCutoffSize has an abnormal value.')
 
         self.FirstMiniFATSector = struct.unpack('<I', data[0x3C:0x40])[0]
         self.ole_logger.debug('Header.FirstMiniFATSector: ' + str(hex(self.FirstMiniFATSector)))
@@ -147,7 +147,7 @@ class OLEHeader:
         self.ole_logger.debug('Header.NumberOfMiniFATSectors: ' + str(hex(self.NumberOfMiniFATSectors)))
 
         if self.NumberOfMiniFATSectors > 0 and self.FirstMiniFATSector == 0xFFFFFFFE:
-            self.raise_exception('OLEHeader.NumberOfMiniFATSectors or OLEHeader.FirstMiniFATSector has an abnormal value.')
+            self._raise_exception('OLEHeader.NumberOfMiniFATSectors or OLEHeader.FirstMiniFATSector has an abnormal value.')
 
         self.FirstDIFATSector = struct.unpack('<I', data[0x44:0x48])[0]
         self.ole_logger.debug('Header.FirstDIFATSector: ' + str(hex(self.FirstDIFATSector)))
@@ -156,7 +156,7 @@ class OLEHeader:
         self.ole_logger.debug('Header.NumberOfDIFATSectors: ' + str(hex(self.NumberOfDIFATSectors)))
 
         if self.NumberOfDIFATSectors > 0 and self.FirstDIFATSector == 0xFFFFFFFE:
-            self.raise_exception('OLEHeader.NumberOfDIFATSectors or OLEHeader.FirstDIFATSector has an abnormal value.')
+            self._raise_exception('OLEHeader.NumberOfDIFATSectors or OLEHeader.FirstDIFATSector has an abnormal value.')
         
         for i in range(0, 109):
             difat = struct.unpack('<I', data[0x4C+i*4:0x4C+i*4+4])[0]
@@ -168,10 +168,10 @@ class OLEHeader:
         for j in range(i, 109):
             difat = struct.unpack('<I', data[0x4C+j*4:0x4C+j*4+4])[0]
             if difat != 0xFFFFFFFF:
-                self.raise_exception('OLEHeader.DIFAT['  + str(j) + '] has an abnormal value.')
+                self._raise_exception('OLEHeader.DIFAT['  + str(j) + '] has an abnormal value.')
 
 
-    def raise_exception(self, error):
+    def _raise_exception(self, error):
         self.ole_logger.error(error)
         raise Exception(error)
 
@@ -219,8 +219,8 @@ class Directory:
         self.ole_logger.debug('Dir.NameLength: ' + str(self.NameLength))
         
         if self.NameLength != len(self.Name)*2+2:
-            self.raise_exception('DirectoryEntry.NameLength has a wrong value.')
-
+            self._raise_exception('DirectoryEntry.NameLength has a wrong value.')
+        
         self.ObjectType = ord(data[0x42])
         if self.ObjectType == 0x00:  
             self.ole_logger.debug('Dir.ObjectType: ' + str(self.ObjectType) + ' (unallocated)')
@@ -231,7 +231,7 @@ class Directory:
         elif self.ObjectType == 0x05:
             self.ole_logger.debug('Dir.ObjectType: ' + str(self.ObjectType) + ' (root storage object)')
         else:
-            self.raise_exception('DirectoryEntry.ObjectType has an abnormal value.')
+            self._raise_exception('DirectoryEntry.ObjectType has an abnormal value.')
 
         self.ColorFlag = ord(data[0x43])
         if self.ColorFlag == 0x00:  
@@ -239,7 +239,7 @@ class Directory:
         elif self.ColorFlag == 0x01:
             self.ole_logger.debug('Dir.ColorFlag: ' + str(self.ColorFlag) + ' (black)')
         else:
-            self.raise_exception('DirectoryEntry.ColorFlag has an abnormal value.')
+            self._raise_exception('DirectoryEntry.ColorFlag has an abnormal value.')
 
         self.LeftSiblingID = struct.unpack('<I', data[0x44:0x48])[0]
         if self.LeftSiblingID >= 0 and self.LeftSiblingID <= 0xFFFFFFF9:
@@ -247,7 +247,7 @@ class Directory:
         elif self.LeftSiblingID == 0xFFFFFFFF:
             self.ole_logger.debug('Dir.LeftSiblingID: ' + str(hex(self.LeftSiblingID)) + ' (NOSTREAM)')
         else:
-            self.raise_exception('DirectoryEntry.LeftSiblingID has an abnormal value.')
+            self._raise_exception('DirectoryEntry.LeftSiblingID has an abnormal value.')
 
         self.RightSiblingID = struct.unpack('<I', data[0x48:0x4C])[0]
         if self.RightSiblingID >= 0 and self.RightSiblingID <= 0xFFFFFFF9:
@@ -255,7 +255,7 @@ class Directory:
         elif self.RightSiblingID == 0xFFFFFFFF:
             self.ole_logger.debug('Dir.LeftSiblingID: ' + str(hex(self.RightSiblingID)) + ' (NOSTREAM)')
         else:
-            self.raise_exception('DirectoryEntry.RightSiblingID has an abnormal value.')
+            self._raise_exception('DirectoryEntry.RightSiblingID has an abnormal value.')
 
         self.ChildID = struct.unpack('<I', data[0x4C:0x50])[0]
         if self.ChildID >= 0 and self.ChildID <= 0xFFFFFFF9:
@@ -263,7 +263,7 @@ class Directory:
         elif self.ChildID == 0xFFFFFFFF:
             self.ole_logger.debug('Dir.ChildID: ' + str(hex(self.ChildID)) + ' (NOSTREAM)')
         else:
-            self.raise_exception('DirectoryEntry.ChildID has an abnormal value.')
+            self._raise_exception('DirectoryEntry.ChildID has an abnormal value.')
 
         self.CLSID = data[0x50:0x60]
         self.ole_logger.debug('Dir.CLSID: ' + self.CLSID.encode('hex'))
@@ -284,7 +284,7 @@ class Directory:
         self.ole_logger.debug('Dir.StreamSize: ' + str(hex(self.StreamSize)))
         
         
-    def raise_exception(self, error):
+    def _raise_exception(self, error):
         self.ole_logger.error(error)
         raise Exception(error)
 
@@ -325,19 +325,19 @@ class OLEFile:
             elif self.OLEHeader.SectorShift == 0x0C:
                 self.sector_size = 4096
             else:
-                self.raise_exception('Invalid SectorSize.')
+                self._raise_exception('Invalid SectorSize.')
 
-            self.init_fat_chain()
+            self._init_fat_chain()
 
             if self.OLEHeader.NumberOfMiniFATSectors > 0:
-                self.init_minifat_chain()
+                self._init_minifat_chain()
 
-            self.init_dir_entry()
+            self._init_dir_entry()
         else:
-            self.raise_exception('Invalid file: ' + filename)
+            self._raise_exception('Invalid file: ' + filename)
 
 
-    def init_fat_chain(self):
+    def _init_fat_chain(self):
         self.DIFAT = list(self.OLEHeader.DIFAT)
 
         if self.OLEHeader.NumberOfDIFATSectors > 0:
@@ -351,16 +351,16 @@ class OLEFile:
                         if i+1 == self.OLEHeader.NumberOfDIFATSectors:
                             break
                         else:
-                            raise_exception('Encounter an invalid DIFAT value when parsing DIFAT chain.')
-                    self.ole_logger.debug('DIFT[' + str(len(self.DIFAT)) + '] :' + str(hex(difat)))
+                            _raise_exception('Encounter an invalid DIFAT value when parsing DIFAT chain.')
+                    self.ole_logger.debug('DIFT[' + str(len(self.DIFAT)) + ']: ' + str(hex(difat)))
                     self.DIFAT.append(difat)    
                 difat_sector_index = struct.unpack('<I', self.file_data[difat_sector_offset+j*4:difat_sector_offset+j*4+4])[0]
                     
         if len(self.DIFAT) != self.OLEHeader.NumberOfFATSectors:
-            raise_exception('OLEHeader.NumberOfFATSectors does not mahtch the number of the DIFAT entries.')
-
-        fat_sector_index = self.OLEHeader.DIFAT[0]   
+            self._raise_exception('OLEHeader.NumberOfFATSectors does not mahtch the number of the DIFAT entries.')
+           
         for i in range(0, self.OLEHeader.NumberOfFATSectors):
+            fat_sector_index = self.OLEHeader.DIFAT[i]
             fat_sector_offset = (fat_sector_index+1) * self.sector_size
             self.ole_logger.debug('FAT sector #' + str(i) + ' at offset: ' + str(hex(fat_sector_offset)))
             for j in range(0, self.sector_size/4):
@@ -372,7 +372,7 @@ class OLEFile:
                     self.ole_logger.debug('FAT[' + str(len(self.FAT)-1) + '] is a FAT sector')
 
     
-    def init_minifat_chain(self):
+    def _init_minifat_chain(self):
         minifat_sector_index = self.OLEHeader.FirstMiniFATSector
         for i in range(0, self.OLEHeader.NumberOfMiniFATSectors):
             minifat_sector_offset = (minifat_sector_index+1) * self.sector_size
@@ -381,10 +381,10 @@ class OLEFile:
                 self.MiniFAT.append(minifat)
             minifat_sector_index = self.FAT[minifat_sector_index]
             if minifat_sector_index == 0xFFFFFFFE and (i+1) != self.OLEHeader.NumberOfMiniFATSectors:
-                raise_exception('self.OLEHeader.NumberOfMiniFATSectors does not match the length of the MiniFat sector chian.')
+                self._raise_exception('self.OLEHeader.NumberOfMiniFATSectors does not match the length of the MiniFat sector chian.')
     
 
-    def init_dir_entry(self):
+    def _init_dir_entry(self):
         dir_sector_index = self.OLEHeader.FirstDirecotrySector
         is_end = False
         while True:
@@ -402,22 +402,70 @@ class OLEFile:
                 break
 
     
-    def raise_exception(self, error):
+    def _raise_exception(self, error):
         self.ole_logger.error(error)
         raise Exception(error)
 
 
-def test_ole():
-    try:
-        olefile = OLEFile('oletest.doc')
-    except Exception as e:
-        print e
+    def find_object_by_name(self, name):
+        data = ''
+        dir_number = len(self.Directory)
         
+        for i in range(0, dir_number):
+            directory = self.Directory[i]
+            if name == directory.Name:
+                sector_index = directory.StartingSector
+                if sector_index == 0xFFFFFFFE:
+                    self._raise_exception('Object: ' + name + ' has no data.')
+                
+                while sector_index != 0xFFFFFFFE:
+                    sector_offset = (sector_index+1) * self.sector_size
+                    data += self.file_data[sector_offset:sector_offset+self.sector_size]
+                    sector_index = self.FAT[sector_index]
+                
+                break
+        
+        if (i+1) == dir_number:
+            self._raise_exception('Could not find object: ' + name)
+
+        if directory.StreamSize > len(data):
+            self._raise_exception('DirectoryEntry.StreamSize larger than real data size.')
+            
+        return data[0: directory.StreamSize]
+
+    
+    def find_object_by_index(self, index):
+        data = ''
+        
+        if index < 0 or index >= len(self.Directory):
+            self._raise_exception('Index out of boundary.')
+            
+        directory = self.Directory[index]
+        sector_index = directory.StartingSector
+        if sector_index == 0xFFFFFFFE:
+            self._raise_exception('Object #' + str(index) + ' has no data.')
+
+        while sector_index != 0xFFFFFFFE:
+            sector_offset = (sector_index+1) * self.sector_size
+            data += self.file_data[sector_offset:sector_offset+self.sector_size]
+            sector_index = self.FAT[sector_index]
+
+        if directory.StreamSize > len(data):
+            self._raise_exception('DirectoryEntry.StreamSize larger than real data size.')
+            
+        return data[0: directory.StreamSize]
+
+
+init_logging(False)
+
 
 if __name__ == '__main__':
-    
     debug = True
-    #debug = False
     init_logging(debug)
+
     
-    test_ole()
+
+   
+    
+    
+
