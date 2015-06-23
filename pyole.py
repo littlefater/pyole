@@ -24,11 +24,20 @@ def init_logging(debug):
         ole_logger.debug('In debug mode.')
 
 
-class OLEHeader:
-
-    ole_logger = None
+class OLEBase:
     
-    '''OLE Header'''
+    ole_logger = logging.getLogger('ole.logger')
+
+    def __init__(self):
+        pass
+
+    def _raise_exception(self, error):
+        self.ole_logger.error(error)
+        raise Exception(error)
+
+
+class OLEHeader(OLEBase):
+
     Signature = ''
     CLSID = ''
     MinorVersion = 0
@@ -50,7 +59,7 @@ class OLEHeader:
 
 
     def __init__(self, data):
-        self.ole_logger = None
+        
         self.Signature = ''
         self.CLSID = ''
         self.MinorVersion = 0
@@ -69,9 +78,6 @@ class OLEHeader:
         self.FirstDIFATSector = 0
         self.NumberOfDIFATSectors = 0
         self.DIFAT = list()
-        
-        self.ole_logger = logging.getLogger('ole.logger')
-        self.ole_logger.debug('Begin to parse OLE header.')
         
         self.Signature = data[0x00:0x08]
         self.ole_logger.debug('Header.Signature: ' + self.Signature.encode('hex').upper())
@@ -171,14 +177,7 @@ class OLEHeader:
                 self._raise_exception('OLEHeader.DIFAT['  + str(j) + '] has an abnormal value.')
 
 
-    def _raise_exception(self, error):
-        self.ole_logger.error(error)
-        raise Exception(error)
-
-
-class Directory:
-
-    ole_logger = None
+class Directory(OLEBase):
 
     Name = ''
     NameLength = 0
@@ -195,7 +194,7 @@ class Directory:
     StreamSize = 0
 
     def __init__(self, data):
-        self.ole_logger = None
+        
         self.Name = ''
         self.NameLength = 0
         self.ObjectType = 0
@@ -209,8 +208,6 @@ class Directory:
         self.ModifiedTime = ''
         self.StartingSector = 0
         self.StreamSize = 0
-
-        self.ole_logger = logging.getLogger('ole.logger')
 
         self.Name = data[0:0x40].decode('utf-16').strip('\x00')
         self.ole_logger.debug('Dir.Name: ' + self.Name)
@@ -282,16 +279,10 @@ class Directory:
 
         self.StreamSize = struct.unpack('<Q', data[0x78:0x80])[0]
         self.ole_logger.debug('Dir.StreamSize: ' + str(hex(self.StreamSize)))
-        
-        
-    def _raise_exception(self, error):
-        self.ole_logger.error(error)
-        raise Exception(error)
 
 
-class OLEFile:
+class OLEFile(OLEBase):
 
-    ole_logger = None
     file_data = None
     sector_size = 0
 
@@ -303,7 +294,7 @@ class OLEFile:
 
 
     def __init__(self, filename):
-        self.ole_logger = None
+        
         self.file_data = None
         self.sector_size = 0
         self.OLEHeader = None
@@ -311,8 +302,6 @@ class OLEFile:
         self.FAT = list()
         self.MiniFAT = list()
         self.Directory = list()
-        
-        self.ole_logger = logging.getLogger('ole.logger')
         
         if os.path.isfile(filename):
             self.file_data = open(filename, 'rb').read()
@@ -394,19 +383,14 @@ class OLEFile:
                 if struct.unpack('<H', dir_data[0x40:0x42])[0] == 0:
                     is_end = True
                     break
-                self.ole_logger.debug('###### Directory #' + str(len(self.Directory)) + ' ######')
+                self.ole_logger.debug('[----- Directory #' + str(len(self.Directory)) + ' -----]')
                 directory = Directory(dir_data)    
                 self.Directory.append(directory)
             dir_sector_index = self.FAT[dir_sector_index]
             if is_end or dir_sector_index == 0xFFFFFFFE:
                 break
-
     
-    def _raise_exception(self, error):
-        self.ole_logger.error(error)
-        raise Exception(error)
-
-
+    
     def find_object_by_name(self, name):
         data = ''
         dir_number = len(self.Directory)
@@ -454,9 +438,6 @@ class OLEFile:
             self._raise_exception('DirectoryEntry.StreamSize larger than real data size.')
             
         return data[0: directory.StreamSize]
-
-
-init_logging(False)
 
 
 if __name__ == '__main__':
