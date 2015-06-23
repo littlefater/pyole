@@ -16,10 +16,13 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         
         try:
+            init_logging(False)
+            
             olefile = OLEFile(sys.argv[1])
             print olefile.OLEHeader.Signature.encode('hex')
             print olefile.Directory[0].Name
             print olefile.find_object_by_name('Root Entry')
+            print olefile.Directory[2].Name
             print olefile.find_object_by_index(2)
             
         except Exception as e:
@@ -29,13 +32,7 @@ if __name__ == '__main__':
         
         if sys.argv[1] == '-d':
             
-            logger = logging.getLogger('ole.logger')
-            logger.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(levelname)s - %(message)s')
-            ch.setFormatter(formatter)
-            logger.addHandler(ch)
+            init_logging(True)
             
             try:
                 olefile = OLEFile(sys.argv[2])
