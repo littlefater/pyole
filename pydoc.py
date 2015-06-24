@@ -235,6 +235,92 @@ class FIB(OLEBase):
             self._raise_exception('DOC.FIB.cbRgFcLcb has an abnormal value.')
         '''
 
+class PropertyIdentifierAndOffset(OLEBase):
+
+    PropertyIdentifier = 0
+    Offset = 0
+
+    def __init__(self, data):
+
+        self.PropertyIdentifier = 0
+        self.Offset = 0
+
+        self.PropertyIdentifier = struct.unpack('<I', data[0:4])[0]
+        self.ole_logger.debug('PropertyIdentifierAndOffset.PropertyIdentifier: ' + str(hex(self.PropertyIdentifier)))
+
+        self.Offset = struct.unpack('<I', data[4:8])[0]
+        self.ole_logger.debug('PropertyIdentifierAndOffset.Offset: ' + str(hex(self.Offset)))
+
+
+
+class DocSummaryInfoPropertySet(OLEBase):
+
+    Size = 0
+    NumProperties = 0
+    PropertyIdentifierAndOffset = list()
+    Property = list()
+
+    def __init__(self, data):
+        
+        self.Size = 0
+        self.NumProperties = 0
+        self.PropertyIdentifierAndOffset = list()
+        self.Property = list()
+        
+        PIDDSI = {'GKPIDDSI_CODEPAGE':0x01, 'GKPIDDSI_CATEGORY':0x02, 'GKPIDDSI_PRESFORMAT':0x03, 'GKPIDDSI_BYTECOUNT':0x04, 'GKPIDDSI_LINECOUNT':0x05,
+              'GKPIDDSI_PARACOUNT':0x06, 'GKPIDDSI_SLIDECOUNT':0x07, 'GKPIDDSI_NOTECOUNT':0x08, 'GKPIDDSI_HIDDENCOUNT':0x09, 'GKPIDDSI_MMCLIPCOUNT':0x0A,
+              'GKPIDDSI_SCALE':0x0B, 'GKPIDDSI_HEADINGPAIR':0x0C, 'GKPIDDSI_DOCPARTS':0x0D, 'GKPIDDSI_MANAGER':0x0E, 'GKPIDDSI_COMPANY':0x0F,
+              'GKPIDDSI_LINKSDIRTY':0x10, 'GKPIDDSI_CCHWITHSPACES':0x11, 'GKPIDDSI_SHAREDDOC':0x13, 'GKPIDDSI_LINKBASE':0x14, 'GKPIDDSI_HLINKS':0x15,
+              'GKPIDDSI_HYPERLINKSCHANGED':0x16, 'GKPIDDSI_VERSION':0x17, 'GKPIDDSI_DIGSIG':0x18, 'GKPIDDSI_CONTENTTYPE':0x1A, 'GKPIDDSI_CONTENTSTATUS':0x1B,
+              'GKPIDDSI_LANGUAGE':0x1C, 'GKPIDDSI_DOCVERSION':0x1D}
+
+        PropertyType= {'VT_EMPTY':0x00, 'VT_NULL':0x01, 'VT_I2':0x02, 'VT_I4':0x03, 'VT_R4':0x04, 'VT_R8':0x05, 'VT_CY':0x06, 'VT_DATE': 0x07, 'VT_BSTR':0x08,
+                       'VT_ERROR':0x0A, 'VT_BOOL':0x0B, 'VT_DECIMAL':0x0E, 'VT_I1':0x10, 'VT_UI1':0x11, 'VT_UI2':0x12, 'VT_UI4':0x13, 'VT_I8':0x14, 'VT_UI8':0x15,
+                       'VT_INT':0x16, 'VT_UINT':0x17, 'VT_LPSTR':0x1E, 'VT_LPWSTR':0x1F, 'VT_FILETIME':0x40, 'VT_BLOB':0x41, 'VT_STREAM':0x42, 'VT_STORAGE':0x43}
+
+        self.Size = struct.unpack('<I', data[0x00:0x04])[0]
+        self.ole_logger.debug('DocSummaryInfoPropertySet.Size: ' + str(hex(self.Size)))
+
+        self.NumProperties = struct.unpack('<I', data[0x04:0x08])[0]
+        self.ole_logger.debug('DocSummaryInfoPropertySet.NumProperties: ' + str(hex(self.NumProperties)))
+
+        for i in range(0, self.NumProperties):
+            piao = PropertyIdentifierAndOffset(data[0x08+i*8:0x08+i*8+8])
+            self.PropertyIdentifierAndOffset.append(piao)
+
+        for i in range(0, self.NumProperties):
+            if (i+1) < self.NumProperties:
+                property = data[self.PropertyIdentifierAndOffset[i].Offset:self.PropertyIdentifierAndOffset[i+1].Offset]
+            else:
+                property = data[self.PropertyIdentifierAndOffset[i].Offset:self.Size]
+            self.Property.append(property)
+        
+        for i in range(0, self.NumProperties):
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_CODEPAGE']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_CODEPAGE.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I2']:
+                    self._raise_exception('Property.GKPIDDSI_CODEPAGE has an abnormal value.')
+                codepage = struct.unpack('<H', self.Property[i][0x04:0x06])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_CODEPAGE: ' + str(hex(codepage)))
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_COMPANY']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_COMPANY.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_COMPANY.cch: ' + str(hex(cch)))
+                if type == PropertyType['VT_LPSTR']:
+                    if cch > 0x0000FFFF:
+                        self._raise_exception('Property.GKPIDDSI_COMPANY.cch has an abnormal value.')
+                    company = self.Property[i][0x10:cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    if cch > 0x0000FFFF:
+                        self._raise_exception('Property.GKPIDDSI_COMPANY.cch has an abnormal value.')
+                    company = self.Property[i][0x10:cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.GKPIDDSI_COMPANY has an abnormal value.')
+                self.ole_logger.debug('Property.GKPIDDSI_COMPANY: ' + company)
+
 
 class DocSummaryInfo(OLEBase):
 
@@ -246,6 +332,11 @@ class DocSummaryInfo(OLEBase):
     OSType = 0
     applicationClsid = ''
     cSections = 0
+    formatId1 = ''
+    sectionOffset1 = 0
+    formatId2 = ''
+    sectionOffset2 = 0
+    DocumentSummaryInfoPropertySet = None
 
     def __init__(self, data):
 
@@ -257,6 +348,11 @@ class DocSummaryInfo(OLEBase):
         self.OSType = 0
         self.applicationClsid = ''
         self.cSections = 0
+        self.formatId1 = ''
+        self.sectionOffset1 = 0
+        self.formatId2 = ''
+        self.sectionOffset2 = 0
+        self.DocumentSummaryInfoPropertySet = None
 
         self.ole_logger.debug('######## DocumentSummaryInfo ########')
 
@@ -287,6 +383,26 @@ class DocSummaryInfo(OLEBase):
         self.ole_logger.debug('DocumentSummaryInfo.cSections: ' + str(hex(self.cSections)))
         if self.cSections != 1 and self.cSections != 2:
             self._raise_exception('DocumentSummaryInfo.cSections has an abnormal value.')
+
+        self.formatId1 = data[0x1C:0x2C]
+        self.ole_logger.debug('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-1.formatId: ' + self.formatId1.encode('hex'))
+        if self.formatId1 != '\x02\xD5\xCD\xD5\x9C\x2E\x1B\x10\x93\x97\x08\x00\x2B\x2C\xF9\xAE':
+            self._raise_exception('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-1.formatId has an abnormal value.')
+
+        self.sectionOffset1 = struct.unpack('<I', data[0x2C:0x30])[0]
+        self.ole_logger.debug('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-1.sectionOffset: ' + str(hex(self.sectionOffset1)))
+
+        if self.cSections == 2:
+            self.formatId2 = data[0x30:0x40]
+            self.ole_logger.debug('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-2.formatId: ' + self.formatId2.encode('hex'))
+            if self.formatId2 != '\x05\xD5\xCD\xD5\x9C\x2E\x1B\x10\x93\x97\x08\x00\x2B\x2C\xF9\xAE':
+                self._raise_exception('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-2.formatId has an abnormal value.')
+
+            self.sectionOffset2 = struct.unpack('<I', data[0x40:0x44])[0]
+            self.ole_logger.debug('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-2.sectionOffset: ' + str(hex(self.sectionOffset2)))
+
+        self.DocumentSummaryInfoPropertySet = DocSummaryInfoPropertySet(data[self.sectionOffset1:])
+
 
 class DOCFile(OLEBase):
 
