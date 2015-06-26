@@ -275,8 +275,10 @@ class DocSummaryInfoPropertySet(OLEBase):
               'GKPIDDSI_LANGUAGE':0x1C, 'GKPIDDSI_DOCVERSION':0x1D}
 
         PropertyType= {'VT_EMPTY':0x00, 'VT_NULL':0x01, 'VT_I2':0x02, 'VT_I4':0x03, 'VT_R4':0x04, 'VT_R8':0x05, 'VT_CY':0x06, 'VT_DATE': 0x07, 'VT_BSTR':0x08,
-                       'VT_ERROR':0x0A, 'VT_BOOL':0x0B, 'VT_DECIMAL':0x0E, 'VT_I1':0x10, 'VT_UI1':0x11, 'VT_UI2':0x12, 'VT_UI4':0x13, 'VT_I8':0x14, 'VT_UI8':0x15,
-                       'VT_INT':0x16, 'VT_UINT':0x17, 'VT_LPSTR':0x1E, 'VT_LPWSTR':0x1F, 'VT_FILETIME':0x40, 'VT_BLOB':0x41, 'VT_STREAM':0x42, 'VT_STORAGE':0x43}
+                       'VT_ERROR':0x0A, 'VT_BOOL':0x0B, 'VT_VARIANT':0x0C, 'VT_DECIMAL':0x0E, 'VT_I1':0x10, 'VT_UI1':0x11, 'VT_UI2':0x12, 'VT_UI4':0x13, 'VT_I8':0x14, 'VT_UI8':0x15,
+                       'VT_INT':0x16, 'VT_UINT':0x17, 'VT_LPSTR':0x1E, 'VT_LPWSTR':0x1F, 'VT_FILETIME':0x40, 'VT_BLOB':0x41, 'VT_STREAM':0x42, 'VT_STORAGE':0x43,
+                       'VT_STREAMED_Object':0x44, 'VT_STORED_Object':0x45, 'VT_BLOB_Object':0x46, 'VT_CF':0x47, 'VT_CLSID':0x48, 'VT_VERSIONED_STREAM':0x49,
+                       'VT_VECTOR':0x1000, 'VT_ARRAY':0x2000}
 
         self.Size = struct.unpack('<I', data[0x00:0x04])[0]
         self.ole_logger.debug('DocSummaryInfoPropertySet.Size: ' + str(hex(self.Size)))
@@ -309,19 +311,119 @@ class DocSummaryInfoPropertySet(OLEBase):
                 self.ole_logger.debug('Property.GKPIDDSI_COMPANY.type: ' + str(hex(type)))
                 cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
                 self.ole_logger.debug('Property.GKPIDDSI_COMPANY.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.GKPIDDSI_COMPANY.cch has an abnormal value.')
                 if type == PropertyType['VT_LPSTR']:
-                    if cch > 0x0000FFFF:
-                        self._raise_exception('Property.GKPIDDSI_COMPANY.cch has an abnormal value.')
-                    company = self.Property[i][0x10:cch]
+                    company = self.Property[i][0x08:0x08+cch]
                 elif type == PropertyType['VT_LPWSTR']:
-                    if cch > 0x0000FFFF:
-                        self._raise_exception('Property.GKPIDDSI_COMPANY.cch has an abnormal value.')
-                    company = self.Property[i][0x10:cch*2].decode('utf-16')
+                    company = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
                 else:
                     self._raise_exception('Property.GKPIDDSI_COMPANY has an abnormal value.')
                 self.ole_logger.debug('Property.GKPIDDSI_COMPANY: ' + company)
 
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_LINECOUNT']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_LINECOUNT.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.GKPIDDSI_LINECOUNT has an abnormal value.')
+                linecount = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_LINECOUNT: ' + str(hex(linecount)))
 
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_PARACOUNT']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_PARACOUNT.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.GKPIDDSI_PARACOUNT has an abnormal value.')
+                pagecount = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_PARACOUNT: ' + str(hex(pagecount)))
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_CCHWITHSPACES']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_CCHWITHSPACES.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.GKPIDDSI_CCHWITHSPACES has an abnormal value.')
+                pagecount = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_CCHWITHSPACES: ' + str(hex(pagecount)))
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_VERSION']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_VERSION.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.GKPIDDSI_VERSION has an abnormal value.')
+                minorversion = struct.unpack('<H', self.Property[i][0x04:0x06])[0]
+                majorverson= struct.unpack('<H', self.Property[i][0x06:0x08])[0]
+                if majorverson == 0:
+                    self._raise_exception('Property.GKPIDDSI_VERSION.MajorVersion has an abnormal value.')
+                self.ole_logger.debug('Property.GKPIDDSI_VERSION.MajorVersion: ' + str(hex(majorverson)))
+                self.ole_logger.debug('Property.GKPIDDSI_VERSION.MinorVersion: ' + str(hex(minorversion)))
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_DOCPARTS']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_DOCPARTS.type: ' + str(hex(type)))
+                celements = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_DOCPARTS.vtValue.cElements: ' + str(hex(celements)))
+                if type == (PropertyType['VT_VECTOR'] | PropertyType['VT_LPSTR']):           
+                    offset = 0
+                    for j in range(0, celements):
+                        cch = struct.unpack('<I', self.Property[i][0x08+offset:0x0C+offset])[0]
+                        self.ole_logger.debug('Property.GKPIDDSI_DOCPARTS.vtValue.rgString[' + str(j) + '].cch: ' + str(hex(cch)))
+                        if cch > 0x0000FFFF:
+                            self._raise_exception('Property.GKPIDDSI_DOCPARTS.vtValue.rgString[' + str(j) + '].cch has an abnormal value.')
+                        value = self.Property[i][0x0C+offset:0x0C+offset+cch]
+                        self.ole_logger.debug('Property.GKPIDDSI_DOCPARTS.vtValue.rgString[' + str(j) + ']: ' + value.encode('hex'))
+                        offset = offset + 4 + cch
+                elif type == (PropertyType['VT_VECTOR'] | PropertyType['VT_LPWSTR']):
+                    offset = 0
+                    for j in range(0, celements):
+                        cch = struct.unpack('<I', self.Property[i][0x08+offset:0x0C+offset])[0]
+                        self.ole_logger.debug('Property.GKPIDDSI_DOCPARTS.vtValue.rgString[' + str(j) + '].cch: ' + str(hex(cch)))
+                        if cch > 0x0000FFFF:
+                            self._raise_exception('Property.GKPIDDSI_DOCPARTS.vtValue.rgString[' + str(j) + '].cch has an abnormal value.')
+                        value = self.Property[i][0x0C+offset:0x0C+offset+cch*2].decode('utf-16')
+                        self.ole_logger.debug('Property.GKPIDDSI_DOCPARTS.vtValue.rgString[' + str(j) + ']: ' + value.encode('hex'))
+                        offset = offset + 4 + cch*2
+                else:
+                    self._raise_exception('Property.GKPIDDSI_DOCPARTS.type has an abnormal value.')
+                
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_HEADINGPAIR']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.type: ' + str(hex(type)))
+                if type != (PropertyType['VT_VECTOR'] | PropertyType['VT_VARIANT']):
+                    self._raise_exception('Property.GKPIDDSI_HEADINGPAIR.type has an abnormal value.')
+                celements = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.cElements: ' + str(hex(celements)))
+                offset = 0
+                for j in range(0, celements/2):
+                    strtype = struct.unpack('<H', self.Property[i][0x08+offset:0x0A+offset])[0]
+                    self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString.type: ' + str(hex(strtype)))
+                    cch = struct.unpack('<I', self.Property[i][0x0C+offset:0x10+offset])[0]
+                    self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString.cch: ' + str(hex(cch)))
+                    if cch > 0x0000FFFF:
+                            self._raise_exception('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString.cch has an abnormal value.')
+                    if strtype == PropertyType['VT_LPSTR']:
+                        value = self.Property[i][0x10+offset:0x10+offset+cch]
+                        self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString: ' + value)
+                        partstype = struct.unpack('<H', self.Property[i][0x10+offset+cch:0x10+offset+cch+0x02])[0]
+                        self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headerParts.type: ' + str(hex(partstype)))
+                        if partstype != PropertyType['VT_I4']:
+                            self._raise_exception('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headerParts.type has an abnormal value.')
+                        parts = struct.unpack('<I', self.Property[i][0x10+offset+cch+0x04:0x10+offset+cch+0x08])[0]
+                        self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headerParts: ' + str(hex(parts)))
+                        offset = offset + 0x10 + cch
+                    elif strtype == PropertyType['VT_LPWSTR']:
+                        value = self.Property[i][0x10+offset:0x10+offset+cch*2].decode('utf-16')
+                        self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString: ' + value)
+                        partstype = struct.unpack('<H', self.Property[i][0x10+offset+cch*2:0x10+offset+cch*2+0x02])[0]
+                        self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headerParts.type: ' + str(hex(partstype)))
+                        if partstype != PropertyType['VT_I4']:
+                            self._raise_exception('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headerParts.type has an abnormal value.')
+                        parts = struct.unpack('<I', self.Property[i][0x10+offset+cch*2+0x04:0x10+offset+cch*2+0x08])[0]
+                        self.ole_logger.debug('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headerParts: ' + str(hex(parts)))
+                        offset = offset + 0x10 + cch*2
+                    else:
+                        self._raise_exception('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString.type has an abnormal value.')
+                    
+                    
 class DocSummaryInfo(OLEBase):
 
     byteOrder = 0
