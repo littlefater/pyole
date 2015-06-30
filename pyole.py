@@ -401,12 +401,21 @@ class OLEFile(OLEBase):
                 sector_index = directory.StartingSector
                 if sector_index == 0xFFFFFFFE:
                     self._raise_exception('Object: ' + name + ' has no data.')
-                
-                while sector_index != 0xFFFFFFFE:
-                    sector_offset = (sector_index+1) * self.sector_size
-                    data += self.file_data[sector_offset:sector_offset+self.sector_size]
-                    sector_index = self.FAT[sector_index]
-                
+
+                if directory.StreamSize < self.OLEHeader.MiniStreamCutoffSize and name != 'Root Entry':
+                    ministream = self.find_object_by_name('Root Entry')
+                    if len(ministream) > 0:
+                        while sector_index != 0xFFFFFFFE:
+                            sector_offset = sector_index * 0x40
+                            data += ministream[sector_offset:sector_offset+0x40]
+                            sector_index = self.MiniFAT[sector_index]
+                    else:
+                        self._raise_exception('Mini Stream is null.')
+                else:
+                    while sector_index != 0xFFFFFFFE:
+                        sector_offset = (sector_index+1) * self.sector_size
+                        data += self.file_data[sector_offset:sector_offset+self.sector_size]
+                        sector_index = self.FAT[sector_index]
                 break
         
         if (i+1) == dir_number:
@@ -429,10 +438,20 @@ class OLEFile(OLEBase):
         if sector_index == 0xFFFFFFFE:
             self._raise_exception('Object #' + str(index) + ' has no data.')
 
-        while sector_index != 0xFFFFFFFE:
-            sector_offset = (sector_index+1) * self.sector_size
-            data += self.file_data[sector_offset:sector_offset+self.sector_size]
-            sector_index = self.FAT[sector_index]
+        if directory.StreamSize < self.OLEHeader.MiniStreamCutoffSize:
+            ministream = self.find_object_by_name('Root Entry')
+            if len(ministream) > 0:
+                while sector_index != 0xFFFFFFFE:
+                    sector_offset = sector_index * 0x40
+                    data += ministream[sector_offset:sector_offset+0x40]
+                    sector_index = self.MiniFAT[sector_index]
+            else:
+                self._raise_exception('Mini Stream is null.')
+        else:
+            while sector_index != 0xFFFFFFFE:
+                sector_offset = (sector_index+1) * self.sector_size
+                data += self.file_data[sector_offset:sector_offset+self.sector_size]
+                sector_index = self.FAT[sector_index]
 
         if directory.StreamSize > len(data):
             self._raise_exception('DirectoryEntry.StreamSize larger than real data size.')

@@ -90,8 +90,8 @@ class FIBBase(OLEBase):
         
         self.unused  = struct.unpack('<H', data[0x04:0x06])[0]
         self.ole_logger.debug('DOC.FIB.FIBBase.unused: ' + str(hex(self.unused)))
-        if self.unused != 0:
-            self.ole_logger.warning('DOC.FIB.FIBBase.unused is not zero.')
+        #if self.unused != 0:
+        #    self.ole_logger.warning('DOC.FIB.FIBBase.unused is not zero.')
 
         self.lid = struct.unpack('<H', data[0x06:0x08])[0]
         self.ole_logger.debug('DOC.FIB.FIBBase.lid: ' + str(hex(self.lid)))
@@ -346,7 +346,11 @@ class DocSummaryInfoPropertySet(OLEBase):
 
         for i in range(0, self.NumProperties):
             if (i+1) < self.NumProperties:
-                property = data[self.PropertyIdentifierAndOffset[i].Offset:self.PropertyIdentifierAndOffset[i+1].Offset]
+                if self.PropertyIdentifierAndOffset[i].Offset < self.PropertyIdentifierAndOffset[i+1].Offset:
+                    property = data[self.PropertyIdentifierAndOffset[i].Offset:self.PropertyIdentifierAndOffset[i+1].Offset]
+                else:
+                    self.ole_logger.warning('DocSummaryInfoPropertySet.PropertyIdentifierAndOffset.Offset is not in increasing order.')
+                    property = data[self.PropertyIdentifierAndOffset[i].Offset:self.Size]
             else:
                 property = data[self.PropertyIdentifierAndOffset[i].Offset:self.Size]
             self.Property.append(property)
@@ -605,7 +609,11 @@ class SummaryInfoPropertySet(OLEBase):
 
         for i in range(0, self.NumProperties):
             if (i+1) < self.NumProperties:
-                property = data[self.PropertyIdentifierAndOffset[i].Offset:self.PropertyIdentifierAndOffset[i+1].Offset]
+                if self.PropertyIdentifierAndOffset[i].Offset < self.PropertyIdentifierAndOffset[i+1].Offset:
+                    property = data[self.PropertyIdentifierAndOffset[i].Offset:self.PropertyIdentifierAndOffset[i+1].Offset]
+                else:
+                    self.ole_logger.warning('SummaryInfoPropertySet.PropertyIdentifierAndOffset.Offset is not in increasing order.')
+                    property = data[self.PropertyIdentifierAndOffset[i].Offset:self.Size]
             else:
                 property = data[self.PropertyIdentifierAndOffset[i].Offset:self.Size]
             self.Property.append(property)
