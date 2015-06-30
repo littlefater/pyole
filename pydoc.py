@@ -3,6 +3,7 @@
 import os
 import struct
 import logging
+import datetime
 from pyole import *
 
 
@@ -184,6 +185,49 @@ class FIBBase(OLEBase):
         self.ole_logger.debug('DOC.FIB.FIBBase.reserved6: ' + str(hex(self.reserved6)))
 
 
+class FibRgFcLcb(OLEBase):
+
+    fcSttbfAssoc  = 0
+    lcbSttbfAssoc  = 0
+    fcSttbfRMark  = 0
+    lcbSttbfRMark = 0
+    fcSttbSavedBy = 0
+    lcbSttbSavedBy = 0
+    dwLowDateTime = 0
+    dwHighDateTime  = 0
+
+    def __init__(self, data):
+
+        self.fcSttbfAssoc  = 0
+        self.lcbSttbfAssoc  = 0
+        self.fcSttbfRMark  = 0
+        self.lcbSttbfRMark = 0
+        self.fcSttbSavedBy = 0
+        self.lcbSttbSavedBy = 0
+        self.dwLowDateTime = 0
+        self.dwHighDateTime = 0
+
+        self.fcSttbfAssoc = struct.unpack('<I', data[0x100:0x104])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.fcSttbfAssoc: ' + str(hex(self.fcSttbfAssoc)))
+        self.lcbSttbfAssoc = struct.unpack('<I', data[0x104:0x108])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.lcbSttbfAssoc: ' + str(hex(self.lcbSttbfAssoc)))
+
+        self.fcSttbfRMark = struct.unpack('<I', data[0x198:0x19C])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.fcSttbfRMark: ' + str(hex(self.fcSttbfRMark)))
+        self.lcbSttbfRMark = struct.unpack('<I', data[0x19C:0x1A0])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.lcbSttbfRMark: ' + str(hex(self.lcbSttbfRMark)))
+
+        self.fcSttbSavedBy = struct.unpack('<I', data[0x238:0x23C])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.fcSttbSavedBy: ' + str(hex(self.fcSttbSavedBy)))
+        self.lcbSttbSavedBy = struct.unpack('<I', data[0x23C:0x240])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.lcbSttbSavedBy: ' + str(hex(self.lcbSttbSavedBy)))
+
+        self.dwLowDateTime = struct.unpack('<I', data[0x2B8:0x2BC])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.dwLowDateTime: ' + str(hex(self.dwLowDateTime)))
+        self.dwHighDateTime = struct.unpack('<I', data[0x2BC:0x2C0])[0]
+        self.ole_logger.debug('DOC.FIB.FibRgFcLcb.dwHighDateTime: ' + str(hex(self.dwHighDateTime)))
+
+
 class FIB(OLEBase):
 
     FIBBase = None
@@ -192,6 +236,8 @@ class FIB(OLEBase):
     cslw = 0
     fibRgLw = ''
     cbRgFcLcb = 0
+    fibRgFcLcbBlob = ''
+    cswNew = 0
 
     def __init__(self, data):
         
@@ -201,6 +247,8 @@ class FIB(OLEBase):
         self.cslw = 0
         self.fibRgLw = ''
         self.cbRgFcLcb = 0
+        self.fibRgFcLcbBlob = ''
+        self.cswNew = 0
 
         self.ole_logger.debug('######## FIB ########')
         
@@ -234,6 +282,12 @@ class FIB(OLEBase):
         if self.FIBBase.nFib == 0x0112 and self.cbRgFcLcb != 0x00B7:
             self._raise_exception('DOC.FIB.cbRgFcLcb has an abnormal value.')
         '''
+
+        self.fibRgFcLcbBlob = FibRgFcLcb(data[0x9A:0x9A+self.cbRgFcLcb*8])
+
+        self.cswNew = struct.unpack('<H', data[0x9A+self.cbRgFcLcb*8:0x9A+self.cbRgFcLcb*8+0x02])[0]
+        self.ole_logger.debug('DOC.FIB.cswNew: ' + str(hex(self.cswNew)))
+
 
 class PropertyIdentifierAndOffset(OLEBase):
 
@@ -305,6 +359,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                     self._raise_exception('Property.GKPIDDSI_CODEPAGE has an abnormal value.')
                 codepage = struct.unpack('<H', self.Property[i][0x04:0x06])[0]
                 self.ole_logger.debug('Property.GKPIDDSI_CODEPAGE: ' + str(hex(codepage)))
+                continue
 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_COMPANY']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -320,6 +375,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                 else:
                     self._raise_exception('Property.GKPIDDSI_COMPANY has an abnormal value.')
                 self.ole_logger.debug('Property.GKPIDDSI_COMPANY: ' + company)
+                continue
 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_LINECOUNT']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -328,6 +384,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                     self._raise_exception('Property.GKPIDDSI_LINECOUNT has an abnormal value.')
                 linecount = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
                 self.ole_logger.debug('Property.GKPIDDSI_LINECOUNT: ' + str(hex(linecount)))
+                continue
 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_PARACOUNT']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -336,6 +393,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                     self._raise_exception('Property.GKPIDDSI_PARACOUNT has an abnormal value.')
                 pagecount = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
                 self.ole_logger.debug('Property.GKPIDDSI_PARACOUNT: ' + str(hex(pagecount)))
+                continue
 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_CCHWITHSPACES']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -344,6 +402,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                     self._raise_exception('Property.GKPIDDSI_CCHWITHSPACES has an abnormal value.')
                 pagecount = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
                 self.ole_logger.debug('Property.GKPIDDSI_CCHWITHSPACES: ' + str(hex(pagecount)))
+                continue
 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_VERSION']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -356,6 +415,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                     self._raise_exception('Property.GKPIDDSI_VERSION.MajorVersion has an abnormal value.')
                 self.ole_logger.debug('Property.GKPIDDSI_VERSION.MajorVersion: ' + str(hex(majorverson)))
                 self.ole_logger.debug('Property.GKPIDDSI_VERSION.MinorVersion: ' + str(hex(minorversion)))
+                continue
 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_DOCPARTS']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -384,6 +444,7 @@ class DocSummaryInfoPropertySet(OLEBase):
                         offset = offset + 4 + cch*2
                 else:
                     self._raise_exception('Property.GKPIDDSI_DOCPARTS.type has an abnormal value.')
+                continue
                 
             if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDDSI['GKPIDDSI_HEADINGPAIR']:
                 type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
@@ -422,8 +483,9 @@ class DocSummaryInfoPropertySet(OLEBase):
                         offset = offset + 0x10 + cch*2
                     else:
                         self._raise_exception('Property.GKPIDDSI_HEADINGPAIR.vtValue.rgHeadingPairs[' + str(j) + '].headingString.type has an abnormal value.')
-                    
-                    
+                continue
+
+
 class DocSummaryInfo(OLEBase):
 
     byteOrder = 0
@@ -506,15 +568,369 @@ class DocSummaryInfo(OLEBase):
         self.DocumentSummaryInfoPropertySet = DocSummaryInfoPropertySet(data[self.sectionOffset1:])
 
 
+class SummaryInfoPropertySet(OLEBase):
+
+    Size = 0
+    NumProperties = 0
+    PropertyIdentifierAndOffset = list()
+    Property = list()
+
+    def __init__(self, data):
+        
+        self.Size = 0
+        self.NumProperties = 0
+        self.PropertyIdentifierAndOffset = list()
+        self.Property = list()
+        
+        PIDSI = {'PIDSI_CODEPAGE':0x01, 'PIDSI_TITLE':0x02, 'PIDSI_SUBJECT':0x03, 'PIDSI_AUTHOR':0x04, 'PIDSI_KEYWORDS':0x05,
+              'PIDSI_COMMENTS':0x06, 'PIDSI_TEMPLATE':0x07, 'PIDSI_LASTAUTHOR':0x08, 'PIDSI_REVNUMBER':0x09, 'PIDSI_EDITTIME':0x0A,
+              'PIDSI_LASTPRINTED':0x0B, 'PIDSI_CREATE_DTM':0x0C, 'PIDSI_LASTSAVE_DTM':0x0D, 'PIDSI_PAGECOUNT':0x0E, 'PIDSI_WORDCOUNT':0x0F,
+              'PIDSI_CHARCOUNT':0x10, 'PIDSI_APPNAME':0x12, 'PIDSI_DOC_SECURITY':0x13}
+
+        PropertyType= {'VT_EMPTY':0x00, 'VT_NULL':0x01, 'VT_I2':0x02, 'VT_I4':0x03, 'VT_R4':0x04, 'VT_R8':0x05, 'VT_CY':0x06, 'VT_DATE': 0x07, 'VT_BSTR':0x08,
+                       'VT_ERROR':0x0A, 'VT_BOOL':0x0B, 'VT_VARIANT':0x0C, 'VT_DECIMAL':0x0E, 'VT_I1':0x10, 'VT_UI1':0x11, 'VT_UI2':0x12, 'VT_UI4':0x13, 'VT_I8':0x14, 'VT_UI8':0x15,
+                       'VT_INT':0x16, 'VT_UINT':0x17, 'VT_LPSTR':0x1E, 'VT_LPWSTR':0x1F, 'VT_FILETIME':0x40, 'VT_BLOB':0x41, 'VT_STREAM':0x42, 'VT_STORAGE':0x43,
+                       'VT_STREAMED_Object':0x44, 'VT_STORED_Object':0x45, 'VT_BLOB_Object':0x46, 'VT_CF':0x47, 'VT_CLSID':0x48, 'VT_VERSIONED_STREAM':0x49,
+                       'VT_VECTOR':0x1000, 'VT_ARRAY':0x2000}
+
+        self.Size = struct.unpack('<I', data[0x00:0x04])[0]
+        self.ole_logger.debug('SummaryInfoPropertySet.Size: ' + str(hex(self.Size)))
+
+        self.NumProperties = struct.unpack('<I', data[0x04:0x08])[0]
+        self.ole_logger.debug('SummaryInfoPropertySet.NumProperties: ' + str(hex(self.NumProperties)))
+
+        for i in range(0, self.NumProperties):
+            piao = PropertyIdentifierAndOffset(data[0x08+i*8:0x08+i*8+8])
+            self.PropertyIdentifierAndOffset.append(piao)
+
+        for i in range(0, self.NumProperties):
+            if (i+1) < self.NumProperties:
+                property = data[self.PropertyIdentifierAndOffset[i].Offset:self.PropertyIdentifierAndOffset[i+1].Offset]
+            else:
+                property = data[self.PropertyIdentifierAndOffset[i].Offset:self.Size]
+            self.Property.append(property)
+        
+        for i in range(0, self.NumProperties):
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_CODEPAGE']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_CODEPAGE.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I2']:
+                    self._raise_exception('Property.PIDSI_CODEPAGE has an abnormal value.')
+                codepage = struct.unpack('<H', self.Property[i][0x04:0x06])[0]
+                self.ole_logger.debug('Property.PIDSI_CODEPAGE: ' + str(hex(codepage)))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_TITLE']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_TITLE.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_TITLE.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_TITLE.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_TITLE has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_TITLE: ' + data)
+                continue
+            
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_SUBJECT']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_SUBJECT.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_SUBJECT.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_SUBJECT.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_SUBJECT has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_SUBJECT: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_AUTHOR']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_AUTHOR.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_AUTHOR.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_AUTHOR.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_AUTHOR has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_AUTHOR: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_KEYWORDS']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_KEYWORDS.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_KEYWORDS.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_KEYWORDS.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_KEYWORDS has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_KEYWORDS: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_COMMENTS']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_COMMENTS.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_COMMENTS.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_COMMENTS.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_COMMENTS has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_COMMENTS: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_TEMPLATE']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_TEMPLATE.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_TEMPLATE.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_TEMPLATE.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_TEMPLATE has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_TEMPLATE: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_LASTAUTHOR']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_LASTAUTHOR.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_LASTAUTHOR.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_LASTAUTHOR.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_LASTAUTHOR has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_LASTAUTHOR: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_REVNUMBER']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_REVNUMBER.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_REVNUMBER.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_REVNUMBER.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_REVNUMBER has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_REVNUMBER: ' + data)
+                continue
+            
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_APPNAME']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_APPNAME.type: ' + str(hex(type)))
+                cch = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_APPNAME.cch: ' + str(hex(cch)))
+                if cch > 0x0000FFFF:
+                        self._raise_exception('Property.PIDSI_APPNAME.cch has an abnormal value.')
+                if type == PropertyType['VT_LPSTR']:
+                    data = self.Property[i][0x08:0x08+cch]
+                elif type == PropertyType['VT_LPWSTR']:
+                    data = self.Property[i][0x08:0x08+cch*2].decode('utf-16')
+                else:
+                    self._raise_exception('Property.PIDSI_APPNAME has an abnormal value.')
+                self.ole_logger.debug('Property.PIDSI_APPNAME: ' + data)
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_EDITTIME']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_APPNAME.type: ' + str(hex(type)))
+                if type != PropertyType['VT_FILETIME']:
+                    self._raise_exception('Property.PIDSI_EDITTIME has an abnormal value.')
+                time = struct.unpack('<Q', self.Property[i][0x04:0x0C])[0]
+                self.ole_logger.debug('Property.PIDSI_EDITTIME: ' + str(hex(time)))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_LASTPRINTED']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_LASTPRINTED.type: ' + str(hex(type)))
+                if type != PropertyType['VT_FILETIME']:
+                    self._raise_exception('Property.PIDSI_LASTPRINTED has an abnormal value.')
+                time = struct.unpack('<Q', self.Property[i][0x04:0x0C])[0]
+                self.ole_logger.debug('Property.PIDSI_LASTPRINTED: ' + self._filetime_to_datetime(time))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_CREATE_DTM']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_CREATE_DTM.type: ' + str(hex(type)))
+                if type != PropertyType['VT_FILETIME']:
+                    self._raise_exception('Property.PIDSI_CREATE_DTM has an abnormal value.')
+                time = struct.unpack('<Q', self.Property[i][0x04:0x0C])[0]
+                self.ole_logger.debug('Property.PIDSI_CREATE_DTM: ' + self._filetime_to_datetime(time))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_LASTSAVE_DTM']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_LASTSAVE_DTM.type: ' + str(hex(type)))
+                if type != PropertyType['VT_FILETIME']:
+                    self._raise_exception('Property.PIDSI_LASTSAVE_DTM has an abnormal value.')
+                time = struct.unpack('<Q', self.Property[i][0x04:0x0C])[0]
+                self.ole_logger.debug('Property.PIDSI_LASTSAVE_DTM: ' + self._filetime_to_datetime(time))
+                continue
+            
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_PAGECOUNT']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_PAGECOUNT.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.PIDSI_PAGECOUNT has an abnormal value.')
+                count = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_PAGECOUNT: ' + str(hex(count)))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_WORDCOUNT']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_WORDCOUNT.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.PIDSI_WORDCOUNT has an abnormal value.')
+                count = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_WORDCOUNT: ' + str(hex(count)))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_CHARCOUNT']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_CHARCOUNT.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.PIDSI_CHARCOUNT has an abnormal value.')
+                count = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_CHARCOUNT: ' + str(hex(count)))
+                continue
+
+            if self.PropertyIdentifierAndOffset[i].PropertyIdentifier == PIDSI['PIDSI_DOC_SECURITY']:
+                type = struct.unpack('<H', self.Property[i][0x00:0x02])[0]
+                self.ole_logger.debug('Property.PIDSI_DOC_SECURITY.type: ' + str(hex(type)))
+                if type != PropertyType['VT_I4']:
+                    self._raise_exception('Property.PIDSI_DOC_SECURITY has an abnormal value.')
+                security = struct.unpack('<I', self.Property[i][0x04:0x08])[0]
+                self.ole_logger.debug('Property.PIDSI_DOC_SECURITY: ' + str(hex(security)))
+                continue
+
+    def _filetime_to_datetime(self, microseconds):
+        seconds, microseconds = divmod(microseconds/10, 1000000)
+        days, seconds = divmod(seconds, 86400)
+        time = datetime.datetime(1601, 1, 1, 0, 0, 0) + datetime.timedelta(days, seconds, microseconds)
+        return str(time)
+
+
+class SummaryInfo(OLEBase):
+
+    byteOrder = 0
+    version = 0
+    sysId = 0
+    OSMajorVersion = 0
+    OSMinorVersion = 0
+    OSType = 0
+    applicationClsid = ''
+    cSections = 0
+    formatId1 = ''
+    sectionOffset1 = 0
+    formatId2 = ''
+    sectionOffset2 = 0
+    SummaryInfoPropertySet = None
+
+    def __init__(self, data):
+
+        self.byteOrder = 0
+        self.version = 0
+        self.sysId = 0
+        self.OSMajorVersion = 0
+        self.OSMinorVersion = 0
+        self.OSType = 0
+        self.applicationClsid = ''
+        self.cSections = 0
+        self.formatId1 = ''
+        self.sectionOffset1 = 0
+        self.formatId2 = ''
+        self.sectionOffset2 = 0
+        self.SummaryInfoPropertySet = None
+
+        self.ole_logger.debug('######## SummaryInfo ########')
+
+        self.byteOrder = struct.unpack('<H', data[0x00:0x02])[0]
+        self.ole_logger.debug('SummaryInfo.byteOrder: ' + str(hex(self.byteOrder)))
+        if self.byteOrder != 0xFFFE:
+            self._raise_exception('DocumentSummaryInfo.byteOrder has an abnormal value.')
+
+        self.version = struct.unpack('<H', data[0x02:0x04])[0]
+        self.ole_logger.debug('SummaryInfo.version: ' + str(hex(self.version)))
+        if self.version != 0 and self.version != 1:
+            self._raise_exception('SummaryInfo.version has an abnormal value.')
+
+        self.sysId = struct.unpack('<I', data[0x04:0x08])[0]
+        self.ole_logger.debug('SummaryInfo.sysId: ' + str(hex(self.sysId)))
+
+        self.clsid = data[0x08:0x18]
+        self.ole_logger.debug('SummaryInfo.clsid: ' + self.clsid.encode('hex'))
+        if self.clsid != '\x00' * 0x10:
+            self._raise_exception('SummaryInfo.clsid has an abnormal value.')
+
+        self.cSections = struct.unpack('<I', data[0x18:0x1C])[0]
+        self.ole_logger.debug('SummaryInfo.cSections: ' + str(hex(self.cSections)))
+        if self.cSections != 1 and self.cSections != 2:
+            self._raise_exception('SummaryInfo.cSections has an abnormal value.')
+
+        self.formatId1 = data[0x1C:0x2C]
+        self.ole_logger.debug('SummaryInfo.rgIdOffset.IdOffsetElement-1.formatId: ' + self.formatId1.encode('hex'))
+        if self.formatId1 != '\xE0\x85\x9F\xF2\xF9\x4F\x68\x10\xAB\x91\x08\x00\x2B\x27\xB3\xD9':
+            self._raise_exception('SummaryInfo.rgIdOffset.IdOffsetElement-1.formatId has an abnormal value.')
+
+        self.sectionOffset1 = struct.unpack('<I', data[0x2C:0x30])[0]
+        self.ole_logger.debug('DocumentSummaryInfo.rgIdOffset.IdOffsetElement-1.sectionOffset: ' + str(hex(self.sectionOffset1)))
+
+        if self.cSections == 2:
+            self.formatId2 = data[0x30:0x40]
+            self.ole_logger.debug('SummaryInfo.rgIdOffset.IdOffsetElement-2.formatId: ' + self.formatId2.encode('hex'))
+            if self.formatId2 != '\x05\xD5\xCD\xD5\x9C\x2E\x1B\x10\x93\x97\x08\x00\x2B\x2C\xF9\xAE':
+                self._raise_exception('SummaryInfo.rgIdOffset.IdOffsetElement-2.formatId has an abnormal value.')
+
+            self.sectionOffset2 = struct.unpack('<I', data[0x40:0x44])[0]
+            self.ole_logger.debug('SummaryInfo.rgIdOffset.IdOffsetElement-2.sectionOffset: ' + str(hex(self.sectionOffset2)))
+
+        self.SummaryInfoPropertySet = SummaryInfoPropertySet(data[self.sectionOffset1:])
+
+
 class DOCFile(OLEBase):
 
     OLE = None
     FIB = None
+    SummaryInfo = None
     DocumentSummaryInfo = None
 
     def __init__(self, filename):
         self.OLE = None
         self.FIB = None
+        self.SummaryInfo = None
         self.DocumentSummaryInfo = None
 
         if os.path.isfile(filename) == False:
@@ -526,8 +942,47 @@ class DOCFile(OLEBase):
         self.FIB = FIB(self.OLE.find_object_by_name('WordDocument'))
 
         for i in range(0, len(self.OLE.Directory)):
+            if self.OLE.Directory[i].Name == '\x05SummaryInformation':
+                self.SummaryInfo = SummaryInfo(self.OLE.find_object_by_index(i))
+
             if self.OLE.Directory[i].Name == '\x05DocumentSummaryInformation':
                 self.DocumentSummaryInfo = DocSummaryInfo(self.OLE.find_object_by_index(i))
+
+    def show_rmark_authors(self):
+        if self.FIB.fibRgFcLcbBlob.fcSttbfRMark != 0:
+            table_stream = ''
+            if self.FIB.FIBBase.fWhichTblStm == 1:
+                table_stream = self.OLE.find_object_by_name('1Table')
+            elif self.FIB.FIBBase.fWhichTblStm == 1:
+                table_stream = self.OLE.find_object_by_name('0Table')
+            else:
+                print 'DOC.FIB.FIBBase.fWhichTblStm has an abnormal value.'
+                return
+                
+            if len(table_stream) > 0:
+                #print table_stream
+                offset = self.FIB.fibRgFcLcbBlob.fcSttbfRMark
+                length = self.FIB.fibRgFcLcbBlob.lcbSttbfRMark
+                SttbfRMark = table_stream[offset:offset+length]
+                fExtend = struct.unpack('<H', SttbfRMark[0x00:0x02])[0]
+                if fExtend != 0xFFFF:
+                    print 'fExtend has an abnormal value.'
+                    return
+                cbExtra = struct.unpack('<H', SttbfRMark[0x04:0x06])[0]
+                if cbExtra != 0:
+                    print 'cbExtra has an abnormal value.'
+                    return
+                cData = struct.unpack('<H', SttbfRMark[0x02:0x04])[0]
+                offset = 0
+                for i in range(0, cData):
+                    cchData = struct.unpack('<H', SttbfRMark[0x06+offset:0x08+offset])[0]
+                    Data = SttbfRMark[0x06+offset+0x02:0x08+offset+cchData*2]
+                    print Data.decode('utf-16')
+                    offset = offset + 0x02 + cchData*2
+            else:
+                print 'Failed to read the Table Stream.'
+        else:
+            print 'No revision marks or comments author information.'
             
 
 if __name__ == '__main__':
@@ -536,6 +991,7 @@ if __name__ == '__main__':
     
     try:
         docfile = DOCFile('oletest.doc')
+        docfile.show_rmark_authors()
     except Exception as e:
         print e
     
