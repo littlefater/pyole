@@ -1058,6 +1058,10 @@ class OLEFile(OLEBase):
         for i in range(0, dir_number):
             directory = self.Directory[i]
             if name == directory.Name:
+
+                if directory.ObjectType != 0x02 and directory.ObjectType != 0x05:
+                    return directory
+                
                 sector_index = directory.StartingSector
                 if sector_index == 0xFFFFFFFE:
                     self.ole_logger.debug('Object: ' + name + ' has no data.')
@@ -1099,6 +1103,10 @@ class OLEFile(OLEBase):
             return None
             
         directory = self.Directory[index]
+
+        if directory.ObjectType != 0x02 and directory.ObjectType != 0x05:
+            return directory
+
         sector_index = directory.StartingSector
         if sector_index == 0xFFFFFFFE:
             self.ole_logger.debug('Object #' + str(index) + ' has no data.')
