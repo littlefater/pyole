@@ -534,11 +534,11 @@ class ProjectConstantsRecord(VBABase):
     def __init__(self, data):
 
         self.Id = 0
-        self.SizeOfHelpFile1 = 0
+        self.SizeOfConstants = 0
         self.Constants = ''
         self.Reserved = 0
-        self.SizeOfHelpFile2 = 0
-        self.HelpFile2 = ''
+        self.SizeOfConstantsUnicode = 0
+        self.ConstantsUnicode = ''
 
         self.Id = struct.unpack('<H', data[0x00:0x02])[0]
         self.ole_logger.debug('ProjectConstantsRecord.Id: ' + str(hex(self.Id)))
@@ -1395,10 +1395,10 @@ class ProjectModulesRecord(VBABase):
     def __init__(self, data):
 
         self.Id = 0
-        Size = 0
-        Count = 0
+        self.Size = 0
+        self.Count = 0
         self.CookieRecord = None
-        ModuleArray = list()
+        self.ModuleArray = list()
 
         self.Id = struct.unpack('<H', data[0x00:0x02])[0]
         self.ole_logger.debug('ModulesRecord.Id: ' + str(hex(self.Id)))
@@ -1418,7 +1418,7 @@ class ProjectModulesRecord(VBABase):
         current = 0x10
         for i in range(0, self.Count):
             Module = ModuleRecord(data[current:])
-            ModuleArray.append(Module)
+            self.ModuleArray.append(Module)
             current = current + Module.Size
         
         
@@ -1447,7 +1447,7 @@ class DirStream(VBABase):
         self.ModulesRecord = ProjectModulesRecord(data[current:])
 
 
-class VBA(VBABase):
+class VBAFile(VBABase):
 
     OLE = None
     PROJECT = None
@@ -1494,6 +1494,6 @@ if __name__ == '__main__':
     #init_logging(False)
 
     try:
-        vba = VBA('oletest1.doc')
+        vba = VBAFile('oletest1.doc')
     except Exception as e:
         print e
