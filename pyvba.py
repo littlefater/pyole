@@ -146,12 +146,8 @@ class Projectwm(VBABase):
                 if -1 != index:
                     namemap_mbcs = namemaps[i][0:index]
                     self.ole_logger.debug('PROJECTwm.NameMap[' + str(i) + '].MBCS: ' + namemap_mbcs)
-                    namemap_utf16 = (namemaps[i][index+1:]+'\x00').decode('utf16')
+                    namemap_utf16 = namemaps[i][index+1:]+'\x00'
                     self.ole_logger.debug('PROJECTwm.NameMap[' + str(i) + '].UTF16: ' + namemap_utf16)
-                    if namemap_mbcs == namemap_utf16:
-                        self.NameMap.append(namemap_mbcs)
-                    else:
-                        self._raise_exception('PROJECTwm.NameMap[' + str(i) + '] has an mismatch values.')
                 else:
                     self._raise_exception('PROJECTwm.NameMap[' + str(i) + '] has an abnormal values.')
         else:
@@ -383,10 +379,8 @@ class ProjectDocStringRecord(VBABase):
             self._raise_exception('ProjectDocStringRecord.SizeOfDocStringUnicode has an abnormal value.')
 
         current = current + 0x04
-        self.DocStringUnicode = data[current:current+self.SizeOfDocStringUnicode].decode('utf16')
+        self.DocStringUnicode = data[current:current+self.SizeOfDocStringUnicode]
         self.ole_logger.debug('ProjectDocStringRecord.DocStringUnicode: ' + self.DocStringUnicode)
-        if self.DocStringUnicode != self.DocString:
-            self._raise_exception('ProjectDocStringRecord.DocStringUnicode and DocStringRecord.DocString are mismatch.')
 
 
 class ProjectHelpFilePathRecord(VBABase):
@@ -566,10 +560,8 @@ class ProjectConstantsRecord(VBABase):
             self._raise_exception('ProjectConstantsRecord.SizeOfConstantsUnicode has an abnormal value.')
 
         current = current + 0x04
-        self.ConstantsUnicode = data[current:current+self.SizeOfConstantsUnicode].decode('utf16')
+        self.ConstantsUnicode = data[current:current+self.SizeOfConstantsUnicode]
         self.ole_logger.debug('ProjectConstantsRecord.ConstantsUnicode: ' + self.ConstantsUnicode)
-        if self.ConstantsUnicode != self.Constants:
-            self._raise_exception('ProjectConstantsRecord.ConstantsUnicode and ConstantsRecord.Constants are mismatch.')
 
 
 class ProjectInformationRecord(VBABase):
@@ -672,10 +664,8 @@ class ReferenceNameRecord(VBABase):
         self.ole_logger.debug('ReferenceNameRecord.SizeOfNameUnicode: ' + str(hex(self.SizeOfNameUnicode)))
 
         current = current + 0x04
-        self.NameUnicode = data[current:current+self.SizeOfNameUnicode].decode('utf16')
+        self.NameUnicode = data[current:current+self.SizeOfNameUnicode]
         self.ole_logger.debug('ReferenceNameRecord.NameUnicode: ' + self.NameUnicode)
-        if self.NameUnicode != self.Name:
-            self._raise_exception('ReferenceNameRecord.NameUnicode and RefenceNameRecord.Name are mismatch.')
 
 
 class ReferenceOriginalRecord(VBABase):
@@ -1066,7 +1056,7 @@ class ModuleNameUnicodeRecord(VBABase):
         self.SizeOfModuleNameUnicode = struct.unpack('<I', data[0x02:0x06])[0]
         self.ole_logger.debug('ModuleNameUnicodeRecord.SizeOfModuleNameUnicode: ' + str(hex(self.SizeOfModuleNameUnicode)))
 
-        self.ModuleNameUnicode = data[0x06:0x06+self.SizeOfModuleNameUnicode].decode('utf-16')
+        self.ModuleNameUnicode = data[0x06:0x06+self.SizeOfModuleNameUnicode]
         self.ole_logger.debug('ModuleNameUnicodeRecord.ModuleName: ' + self.ModuleNameUnicode)
 
 
@@ -1110,10 +1100,8 @@ class ModuleStreamNameRecord(VBABase):
         self.ole_logger.debug('ModuleStreamNameRecord.SizeOfStreamNameUnicode: ' + str(hex(self.SizeOfStreamNameUnicode)))
 
         current = current + 0x04
-        self.StreamNameUnicode = data[current:current+self.SizeOfStreamNameUnicode].decode('utf16')
+        self.StreamNameUnicode = data[current:current+self.SizeOfStreamNameUnicode]
         self.ole_logger.debug('ModuleStreamNameRecord.StreamNameUnicode: ' + self.StreamNameUnicode)
-        if self.StreamNameUnicode != self.StreamName:
-            self._raise_exception('ModuleStreamNameRecord.StreamNameUnicode and ModuleStreamNameRecord.StreamName are mismatch.')
 
 
 class ModuleDocStringRecord(VBABase):
@@ -1156,10 +1144,8 @@ class ModuleDocStringRecord(VBABase):
         self.ole_logger.debug('ModuleDocStringRecord.SizeOfDocStringUnicode: ' + str(hex(self.SizeOfDocStringUnicode)))
 
         current = current + 0x04
-        self.DocStringUnicode = data[current:current+self.SizeOfDocStringUnicode].decode('utf16')
-        self.ole_logger.debug('ModuleDocStringRecord.DocStringUnicode: ' + self.DocStringUnicode)
-        if self.DocStringUnicode != self.DocString:
-            self._raise_exception('ModuleDocStringRecord.DocStringUnicode and ModuleDocStringRecord.DocString are mismatch.')    
+        self.DocStringUnicode = data[current:current+self.SizeOfDocStringUnicode]
+        self.ole_logger.debug('ModuleDocStringRecord.DocStringUnicode: ' + self.DocStringUnicode)    
 
 
 class ModuleOffsetRecord(VBABase):
@@ -1341,8 +1327,6 @@ class ModuleRecord(VBABase):
 
         current = current + 0x06 + self.NameRecord.SizeOfModuleName
         self.NameUnicodeRecord = ModuleNameUnicodeRecord(data[current:])
-        if self.NameUnicodeRecord.ModuleNameUnicode != self.NameRecord.ModuleName:
-            self._raise_exception('ModuleRecord.ModuleNameUnicode and ModuleRecord.ModuleName are mismatch.')
 
         current = current + 0x06 + self.NameUnicodeRecord.SizeOfModuleNameUnicode
         self.StreamNameRecord = ModuleStreamNameRecord(data[current:])
