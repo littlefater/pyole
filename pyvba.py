@@ -735,12 +735,12 @@ class ReferenceControlRecord(VBABase):
 
         id = struct.unpack('<H', data[current:current+0x02])[0]
         if id == 0x33:
-            self.OriginalRecord = RefenceOriginalRecord(data)
+            self.OriginalRecord = ReferenceOriginalRecord(data)
             current = current + 0x06 + self.OriginalRecord.SizeOfLibidOriginal
 
         self.Id = struct.unpack('<H', data[current:current+0x02])[0]
         self.ole_logger.debug('ReferenceControlRecord.Id: ' + str(hex(self.Id)))
-        if self.id != 0x2F:
+        if self.Id != 0x2F:
             self._raise_exception('ReferenceControlRecord.Id has an abnormal value.')
 
         current = current + 0x02
@@ -752,10 +752,10 @@ class ReferenceControlRecord(VBABase):
         self.ole_logger.debug('ReferenceControlRecord.SizeOfLibidTwiddled: ' + str(hex(self.SizeOfLibidTwiddled)))
 
         current = current + 0x04   
-        self.LibidTwiddled = data[current:current+self.SizeTwiddled]
+        self.LibidTwiddled = data[current:current+self.SizeOfLibidTwiddled]
         self.ole_logger.debug('ReferenceControlRecord.LibidTwiddled: ' + self.LibidTwiddled)
 
-        current = current + self.SizeTwiddled
+        current = current + self.SizeOfLibidTwiddled
         self.Reserved1 = struct.unpack('<I', data[current:current+0x04])[0]
         self.ole_logger.debug('ReferenceControlRecord.Reserved1: ' + str(hex(self.Reserved1)))
         if self.Reserved1 != 0x00:
@@ -771,15 +771,15 @@ class ReferenceControlRecord(VBABase):
         id = struct.unpack('<H', data[current:current+0x02])[0]
         if id == 0x16:
             self.NameRecordExtended = ReferenceNameRecord(data[current:])
-            current = current + 0x0C + self.NameRecord.SizeOfName + self.NameRecord.SizeOfNameUnicode
+            current = current + 0x0C + self.NameRecordExtended.SizeOfName + self.NameRecordExtended.SizeOfNameUnicode
 
         self.Reserved3 = struct.unpack('<H', data[current:current+0x02])[0]
         self.ole_logger.debug('ReferenceControlRecord.Reserved3: ' + str(hex(self.Reserved3)))
-        if self.Reserved3 != 0x00:
+        if self.Reserved3 != 0x30:
             self._raise_exception('ReferenceControlRecord.Reserved3 has an abnormal value.')
 
         current = current + 0x02
-        self.SizeExtended = struct.unpack('<H', data[current:current+0x04])[0]
+        self.SizeExtended = struct.unpack('<I', data[current:current+0x04])[0]
         self.ole_logger.debug('ReferenceControlRecord.SizeExtended: ' + str(hex(self.SizeExtended)))
 
         current = current + 0x04
