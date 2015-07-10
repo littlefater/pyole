@@ -202,6 +202,7 @@ class OLEHeader(OLEBase):
             self.ole_logger.debug('OLEHeader.DIFAT[' + str(i) + '] :' + str(hex(difat)))
             self.DIFAT.append(difat)
 
+        i += 1
         for j in range(i, 109):
             difat = struct.unpack('<I', data[0x4C+j*4:0x4C+j*4+4])[0]
             if difat != 0xFFFFFFFF:
@@ -1002,7 +1003,7 @@ class OLEFile(OLEBase):
             self._raise_exception('OLEHeader.NumberOfFATSectors does not mahtch the number of the DIFAT entries.')
            
         for i in range(0, self.OLEHeader.NumberOfFATSectors):
-            fat_sector_index = self.OLEHeader.DIFAT[i]
+            fat_sector_index = self.DIFAT[i]
             fat_sector_offset = (fat_sector_index+1) * self.sector_size
             self.ole_logger.debug('FAT sector #' + str(i) + ' at offset: ' + str(hex(fat_sector_offset)))
             for j in range(0, self.sector_size/4):
