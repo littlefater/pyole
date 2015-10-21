@@ -1,4 +1,7 @@
-# pyvba example: show vba project information
+#!/usr/bin/env python
+"""
+pyvba example: parse vba project information
+"""
 
 import os
 import re
@@ -9,8 +12,9 @@ import shutil
 import base64
 import zipfile
 import hashlib
-from pyvba import *
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pyvba import *
 
 def vba_info(filename):
 
