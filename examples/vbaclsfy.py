@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 """
-pyvba example: parse vba project information
+pyvba example: file classification based on vba information
+
+currently support files in following format:
+* ole format
+* openxml format
+* mhtml format
+* base64 encoded mhtml format
 """
 
 import os
