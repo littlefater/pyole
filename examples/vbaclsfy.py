@@ -26,20 +26,21 @@ def vba_info(filename):
 
     try:
         vbafile = VBAFile(filename)
-
-        print '###### VBA Project Properties ######\n'
         
-        print '[Project Property]'
-        for key, value in vbafile.PROJECT.Property.iteritems():
-            print key + ' = ' + value
+        if vbafile.PROJECT != None:
+            print '###### VBA Project Properties ######\n'
+             
+            print '[Project Property]'
+            for key, value in vbafile.PROJECT.Property.iteritems():
+                print key + ' = ' + value
 
-        print '\n[Host Extenders]'
-        for key, value in vbafile.PROJECT.HostExtenders.iteritems():
-            print key + ' = ' + value
+            print '\n[Host Extenders]'
+            for key, value in vbafile.PROJECT.HostExtenders.iteritems():
+                print key + ' = ' + value
 
-        print '\n[Workspace]'
-        for key, value in vbafile.PROJECT.Workspace.iteritems():
-            print key + ' = ' + value
+            print '\n[Workspace]'
+            for key, value in vbafile.PROJECT.Workspace.iteritems():
+                print key + ' = ' + value
 
         print '\n###### VBA Project Records ######\n'
 
@@ -112,30 +113,27 @@ def vba_info(filename):
             
     except Exception as e:
         print e
-
+    
     return False
 
 
 def find_unique_vba(file_list):
     vba_list = list()
     vba_hash_list = list()
+    cookie_list = list()
 
     for filename in file_list:
         ole_file = extract_ole_file(filename)
         if ole_file is not None:
             try:
-                vbafile = VBAFile(ole_file)
-                #vba_list.append(filename)
                 ole_hash = hashlib.md5(open(ole_file, 'rb').read()).hexdigest()
                 if ole_hash not in vba_hash_list:
                     vba_hash_list.append(ole_hash)
-                    project_hash = hashlib.md5(vbafile.OLE.find_object_by_name('PROJECT')).hexdigest()
-                    if project_hash not in vba_hash_list:
-                        vba_hash_list.append(project_hash)
-                        cookie_hash = hashlib.md5(str(vbafile.dir.ModulesRecord.CookieRecord.Cookie)).hexdigest()
-                        if cookie_hash not in vba_hash_list:
-                            vba_hash_list.append(cookie_hash)
-                            vba_list.append(filename)
+                    vbafile = VBAFile(ole_file)
+                    cookie = str(vbafile.dir.ModulesRecord.CookieRecord.Cookie)
+                    if cookie not in cookie_list:
+                        cookie_list.append(cookie)
+                        vba_list.append(filename)
             except Exception as e:
                 print filename + ': ' + str(e)
 
@@ -203,53 +201,111 @@ def classify_files(filedir):
     return file_lists
 
 
-def parse_files(filedir):
+def parse_files(filedir, action):
 
     file_lists = classify_files(filedir)
+
+    if action:
+        out_dir = 'classify_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
     
     if len(file_lists['ole']) > 0:
         print '######################################'
         print 'Files in OLE format:'
         print '######################################'
         for filename in file_lists['ole']:
-            print filename
+            name = os.path.basename(filename)
+            print name
         print 'Totle number: ' + str(len(file_lists['ole']))
         parse_vba_info(file_lists['ole'])
-
+        if action:
+            ole_dir = os.path.join(out_dir, 'ole')
+            os.makedirs(ole_dir)
+            for filename in file_lists['ole']:
+                name = os.path.basename(filename)
+                newfile = os.path.join(ole_dir, name)
+                if 1 == action:
+                    shutil.copy2(filename, newfile)
+                elif 2 == action:
+                    shutil.move(filename, newfile)
+    
     if len(file_lists['openxml']) > 0:
         print '######################################'
         print 'Files in OPEN XML format:'
         print '######################################'
         for filename in file_lists['openxml']:
-            print filename
+            name = os.path.basename(filename)
+            print name
         print 'Totle number: ' + str(len(file_lists['openxml']))
         parse_vba_info(file_lists['openxml'])
-
+        if action:
+            openxml_dir = os.path.join(out_dir, 'openxml')
+            os.makedirs(openxml_dir)
+            for filename in file_lists['openxml']:
+                name = os.path.basename(filename)
+                newfile = os.path.join(openxml_dir, name)
+                if 1 == action:
+                    shutil.copy2(filename, newfile)
+                elif 2 == action:
+                    shutil.move(filename, newfile)
+    
     if len(file_lists['mhtml']) > 0:
         print '######################################'
         print 'Files in MHTML format:'
         print '######################################'
         for filename in file_lists['mhtml']:
-            print filename
+            name = os.path.basename(filename)
+            print name
         print 'Totle number: ' + str(len(file_lists['mhtml']))
         parse_vba_info(file_lists['mhtml'])
+        if action:
+            mhtml_dir = os.path.join(out_dir, 'mhtml')
+            os.makedirs(mhtml_dir)
+            for filename in file_lists['mhtml']:
+                name = os.path.basename(filename)
+                newfile = os.path.join(mhtml_dir, name)
+                if 1 == action:
+                    shutil.copy2(filename, newfile)
+                elif 2 == action:
+                    shutil.move(filename, newfile)
 
     if len(file_lists['base64']) > 0:
         print '######################################'
         print 'Files in base64 encoded MHTML format:'
         print '######################################'
         for filename in file_lists['base64']:
-            print filename
+            name = os.path.basename(filename)
+            print name
         print 'Totle number: ' + str(len(file_lists['base64']))
         parse_vba_info(file_lists['base64'])
+        if action:
+            b64mhtml_dir = os.path.join(out_dir, 'b64mhtml')
+            os.makedirs(b64mhtml_dir)
+            for filename in file_lists['base64']:
+                name = os.path.basename(filename)
+                newfile = os.path.join(b64mhtml_dir, name)
+                if 1 == action:
+                    shutil.copy2(filename, newfile)
+                elif 2 == action:
+                    shutil.move(filename, newfile)
 
     if len(file_lists['other']) > 0:
         print '######################################'
         print 'Files in unsupport file format:'
         print '######################################'
         for filename in file_lists['other']:
-            print filename
+            name = os.path.basename(filename)
+            print name
         print 'Totle number: ' + str(len(file_lists['other']))
+        if action:
+            other_dir = os.path.join(out_dir, 'other')
+            os.makedirs(other_dir)
+            for filename in file_lists['other']:
+                name = os.path.basename(filename)
+                newfile = os.path.join(other_dir, name)
+                if 1 == action:  
+                    shutil.copy2(filename, newfile)
+                elif 2 == action:
+                    shutil.move(filename, newfile)
 
 
 def extract_ole_file(filename):
@@ -264,13 +320,13 @@ def extract_ole_file(filename):
         try:
             zf = zipfile.ZipFile(filename, 'r')
             for name in zf.namelist():
-                if name.find('vbaProject.bin') != -1:
+                if name[-14:] == 'vbaProject.bin':
                     data = zf.read(name)
                     open(tmp_file, 'wb').write(data)
                     return tmp_file
-            print 'No vbaProject.bin found in zip arachive.'
+            print filename + ': No vbaProject.bin found in zip arachive.'
         except Exception as e:
-            print e
+            print filename + ': ' + str(e)
 
     if data[0x00:0x08] == 'IE1JTUUt':
         m = re.search('IE1JTU[0-9a-zA-Z/+=\x0d\x0a]{1000,}', data)
@@ -288,33 +344,49 @@ def extract_ole_file(filename):
                 open(tmp_file, 'wb').write(data)
                 return tmp_file
             except Exception as e:
-                print filename + ' ' + str(e)
+                print filename + ': ' + str(e)
 
     return None
 
 
 if __name__ == '__main__':
-
-    init_logging(False)
     
-    if len(sys.argv) == 3:
+    if len(sys.argv) >= 3 and len(sys.argv) <= 4:
         if sys.argv[1] == '-f':
+            init_logging(True)
+            if len(sys.argv) == 4:
+                if sys.argv[3] == '-copy' or sys.argv[3] == '-move':
+                    print '[-copy/-move] option only can be used together with [-d] option.'
+                else:
+                    print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory] [-copy/-move]'
+                exit(0)
             if os.path.isfile(sys.argv[2]):
                 ole_file = extract_ole_file(sys.argv[2])
                 if ole_file is not None:
                     vba_info(ole_file)
                     if ole_file[0x00:0x07] == 'tmpole_':
-                        os.remove(ole_file)
+                        print 'Extracted OLE file: ' + ole_file
                 else: 
                     print 'Unsupport file format.'
             else:
                 print 'Invalid file name.'
         elif sys.argv[1] == '-d':
+            init_logging(False)
+            action = 0
+            if len(sys.argv) == 4:
+                if sys.argv[3] == '-copy':
+                    action = 1
+                elif sys.argv[3] == '-move':
+                    action = 2
+                else:
+                    print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory] [-copy/-move]'
+                    exit(0)
             if os.path.isdir(sys.argv[2]):
-                parse_files(sys.argv[2])
+                parse_files(sys.argv[2], action)
             else:
-                print 'Invalid directory.'
+                print 'Invalid directory: ' + sys.argv[2]
         else:
-            print 'Invalid option.'
+            print 'Invalid option: ' + sys.argv[1]
     else:
-        print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory]'
+        print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory] [-copy/-move]'
+        
