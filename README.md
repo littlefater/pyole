@@ -7,8 +7,9 @@ Python OLE File Parser
 
 
 #### Examples:
-* oleinfo.py
-* vbainfo.py
+* oleinfo.py - simple example to parse ole information
+* vbaclsfy.py - classify files based on vba information
+* vbaflt.py - filter out files based on strings in VBA
 
 
 #### References:
