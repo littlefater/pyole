@@ -1453,7 +1453,7 @@ class VBAFile(VBABase):
         if project_data is not None:
             self.PROJECT = ProjectStream(project_data)
         else:
-            self._raise_exception('VBA project does not contain the PROJECT stream.')
+            self.ole_logger.warn('VBA project does not contain the PROJECT stream.')
             
         projectwm_data = self.OLE.find_object_by_name('PROJECTwm')
         if projectwm_data is not None:
@@ -1463,7 +1463,7 @@ class VBAFile(VBABase):
         if vba_project_data is not None:
             self.VBA_PROJECT = VBAProject(vba_project_data)
         else:
-            self._raise_exception('VBA project does not contain the _VBA_PROJECT stream.')
+            self.ole_logger.warn('VBA project does not contain the _VBA_PROJECT stream.')
 
         dir_data = self.OLE.find_object_by_name('dir')
         if dir_data is not None:

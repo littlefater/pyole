@@ -1090,7 +1090,7 @@ class OLEFile(OLEBase):
             return None
 
         if directory.StreamSize > len(data):
-            self.ole_logger.debug('DirectoryEntry.StreamSize larger than real data size.')
+            self.ole_logger.warn('DirectoryEntry.StreamSize larger than real data size.')
             return None
             
         return data[0: directory.StreamSize]
@@ -1100,7 +1100,7 @@ class OLEFile(OLEBase):
         data = ''
         
         if index < 0 or index >= len(self.Directory):
-            self.ole_logger.debug('Index out of boundary.')
+            self.ole_logger.warn('Index out of boundary.')
             return None
             
         directory = self.Directory[index]
@@ -1130,7 +1130,7 @@ class OLEFile(OLEBase):
                 sector_index = self.FAT[sector_index]
 
         if directory.StreamSize > len(data):
-            self.ole_logger.debug('DirectoryEntry.StreamSize larger than real data size.')
+            self.ole_logger.warn('DirectoryEntry.StreamSize larger than real data size.')
             return None
             
         return data[0: directory.StreamSize]
