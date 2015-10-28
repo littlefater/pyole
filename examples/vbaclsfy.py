@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-pyvba example: file classification based on vba information
+pyvba example: file classification based on file format
 
 currently support files in following format:
 * ole format
@@ -201,12 +201,12 @@ def classify_files(filedir):
     return file_lists
 
 
-def parse_files(filedir, action):
+def parse_files(filedir, action, vbainfo):
 
     file_lists = classify_files(filedir)
 
     if action:
-        out_dir = 'classify_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+        out_dir = 'classified_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
     
     if len(file_lists['ole']) > 0:
         print '######################################'
@@ -216,7 +216,8 @@ def parse_files(filedir, action):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['ole']))
-        parse_vba_info(file_lists['ole'])
+        if vbainfo:
+            parse_vba_info(file_lists['ole'])
         if action:
             ole_dir = os.path.join(out_dir, 'ole')
             os.makedirs(ole_dir)
@@ -236,7 +237,8 @@ def parse_files(filedir, action):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['openxml']))
-        parse_vba_info(file_lists['openxml'])
+        if vbainfo:
+            parse_vba_info(file_lists['openxml'])
         if action:
             openxml_dir = os.path.join(out_dir, 'openxml')
             os.makedirs(openxml_dir)
@@ -256,7 +258,8 @@ def parse_files(filedir, action):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['mhtml']))
-        parse_vba_info(file_lists['mhtml'])
+        if vbainfo:
+            parse_vba_info(file_lists['mhtml'])
         if action:
             mhtml_dir = os.path.join(out_dir, 'mhtml')
             os.makedirs(mhtml_dir)
@@ -276,7 +279,8 @@ def parse_files(filedir, action):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['base64']))
-        parse_vba_info(file_lists['base64'])
+        if vbainfo:
+            parse_vba_info(file_lists['base64'])
         if action:
             b64mhtml_dir = os.path.join(out_dir, 'b64mhtml')
             os.makedirs(b64mhtml_dir)
@@ -306,6 +310,13 @@ def parse_files(filedir, action):
                     shutil.copy2(filename, newfile)
                 elif 2 == action:
                     shutil.move(filename, newfile)
+    
+    if action:
+        print '######################################'
+        if 1 == action:  
+            print 'The classified files are copied to: ' + out_dir
+        elif 2 == action:
+            print 'The classified files are moved to: ' + out_dir
 
 
 def extract_ole_file(filename):
@@ -350,43 +361,36 @@ def extract_ole_file(filename):
 
 
 if __name__ == '__main__':
+
+    init_logging(False)
     
-    if len(sys.argv) >= 3 and len(sys.argv) <= 4:
-        if sys.argv[1] == '-f':
-            init_logging(True)
-            if len(sys.argv) == 4:
-                if sys.argv[3] == '-copy' or sys.argv[3] == '-move':
-                    print '[-copy/-move] option only can be used together with [-d] option.'
-                else:
-                    print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory] [-copy/-move]'
+    if len(sys.argv) >= 2 and len(sys.argv) <= 4:
+        action = 0
+        vbainfo = False
+        if len(sys.argv) >= 3:
+            if sys.argv[2] == '-copy' and action == 0:
+                action = 1
+            elif sys.argv[2] == '-move' and action == 0:
+                action = 2
+            elif sys.argv[2] == '-vba' and vbainfo == False:
+                vbainfo = True
+            else:
+                print 'Usage: ' + sys.argv[0] + ' directory [-vba] [-copy/-move]'
                 exit(0)
-            if os.path.isfile(sys.argv[2]):
-                ole_file = extract_ole_file(sys.argv[2])
-                if ole_file is not None:
-                    vba_info(ole_file)
-                    if ole_file[0x00:0x07] == 'tmpole_':
-                        print 'Extracted OLE file: ' + ole_file
-                else: 
-                    print 'Unsupport file format.'
+        if len(sys.argv) == 4:
+            if sys.argv[3] == '-copy' and action == 0:
+                action = 1
+            elif sys.argv[3] == '-move' and action == 0:
+                action = 2
+            elif sys.argv[3] == '-vba' and vbainfo == False:
+                vbainfo = True
             else:
-                print 'Invalid file name.'
-        elif sys.argv[1] == '-d':
-            init_logging(False)
-            action = 0
-            if len(sys.argv) == 4:
-                if sys.argv[3] == '-copy':
-                    action = 1
-                elif sys.argv[3] == '-move':
-                    action = 2
-                else:
-                    print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory] [-copy/-move]'
-                    exit(0)
-            if os.path.isdir(sys.argv[2]):
-                parse_files(sys.argv[2], action)
-            else:
-                print 'Invalid directory: ' + sys.argv[2]
+                print 'Usage: ' + sys.argv[0] + ' directory [-vba] [-copy/-move]'
+                exit(0)
+        if os.path.isdir(sys.argv[1]):
+            parse_files(sys.argv[1], action, vbainfo)
         else:
-            print 'Invalid option: ' + sys.argv[1]
+            print 'Invalid directory: ' + sys.argv[1]
     else:
-        print 'Usage: ' + sys.argv[0] + ' -[f/d] [file/directory] [-copy/-move]'
+        print 'Usage: ' + sys.argv[0] + ' directory [-vba] [-copy/-move]'
         
