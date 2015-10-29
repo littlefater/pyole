@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-pyole example: filter out samples based on strings in VBA
+pyvba example: filter out samples based on strings in VBA
 
 currently support files in following format:
 * ole format
@@ -51,6 +51,7 @@ def parse_files(filedir, sig_list, action):
         out_dir = 'flt_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         os.makedirs(out_dir)
 
+    count = 0
     for root, dirs, files in os.walk(filedir):
         for file in files:
             filename = os.path.join(root, file)
@@ -61,6 +62,7 @@ def parse_files(filedir, sig_list, action):
                 if ole_file[0x00:0x07] == 'tmpole_':
                     os.remove(ole_file)
                 if result:
+                    count += 1
                     print file
                     if 1 == action:
                         newfile = os.path.join(out_dir, file)
@@ -70,6 +72,19 @@ def parse_files(filedir, sig_list, action):
                         shutil.move(filename, newfile)
             else: 
                 print file + ': Unsupport file format.'
+
+    if count > 0:
+        print 'Found ' + str(count) + ' files.'
+    else:
+        print 'No file found, please adjust your signatures.'
+
+    if action and count:
+        if 1 == action:
+            print 'Files copied to: ' + out_dir
+        elif 2 == action:
+            print 'Files moved to: ' + out_dir
+    elif action:
+        os.removedirs(out_dir)
 
 
 def extract_ole_file(filename):
