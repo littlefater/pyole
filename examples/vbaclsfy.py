@@ -18,9 +18,11 @@ import shutil
 import base64
 import zipfile
 import hashlib
+import argparse
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pyvba import *
+
 
 def vba_info(filename):
 
@@ -143,9 +145,13 @@ def find_unique_vba(file_list):
     return vba_list
 
 
-def parse_vba_info(file_list):
-    vba_list = find_unique_vba(file_list)
-    print 'Unique VBA: ' + str(len(vba_list))
+def parse_vba_info(file_list, unique):
+    if unique:
+        vba_list = find_unique_vba(file_list)
+        print 'Unique VBA: ' + str(len(vba_list))
+    else:
+        vba_list = file_list
+        print 'Total VBA: ' + str(len(vba_list))
     
     i = 0
     for filename in vba_list:
@@ -201,13 +207,48 @@ def classify_files(filedir):
     return file_lists
 
 
-def parse_files(filedir, action, vbainfo):
+def mov_unsupported_files(file_list, out_dir):
+
+    support_files = list()
+    
+    for filename in file_list:
+        ole_file = extract_ole_file(filename)
+        if ole_file is not None:
+            try:
+                vbafile = VBAFile(ole_file)
+                support_files.append(filename)
+            except Exception as e:
+                print filename + ': Unable to parse the VBA structure.'
+                if False == os.path.isdir(out_dir):
+                    os.makedirs(out_dir)
+                name = os.path.basename(filename)
+                newfile = os.path.join(out_dir, name)
+                shutil.move(filename, newfile)
+                print 'Unsupported file moved to:',  newfile
+            if ole_file[0x00:0x07] == 'tmpole_':
+                os.remove(ole_file)
+        else:
+            print filename + ': Unsupported file.'
+            if False == os.path.isdir(out_dir):
+                os.makedirs(out_dir)
+            name = os.path.basename(filename)
+            newfile = os.path.join(out_dir, name)
+            shutil.move(filename, newfile)
+            print 'Unsupported file moved to:',  newfile
+
+    return support_files
+
+
+def parse_files(filedir, action, vbainfo, unique, move_unsupport):
 
     file_lists = classify_files(filedir)
 
     if action:
         out_dir = 'classified_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-    
+
+    if move_unsupport:
+        unsupport_dir = 'classified_unsupported_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+
     if len(file_lists['ole']) > 0:
         print '######################################'
         print 'Files in OLE format:'
@@ -216,8 +257,12 @@ def parse_files(filedir, action, vbainfo):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['ole']))
+        if move_unsupport:
+            unsupport_ole_dir = os.path.join(unsupport_dir, 'ole')
+            support_files = mov_unsupported_files(file_lists['ole'], unsupport_ole_dir)
+            file_lists['ole'] = support_files
         if vbainfo:
-            parse_vba_info(file_lists['ole'])
+            parse_vba_info(file_lists['ole'], unique)
         if action:
             ole_dir = os.path.join(out_dir, 'ole')
             os.makedirs(ole_dir)
@@ -237,8 +282,12 @@ def parse_files(filedir, action, vbainfo):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['openxml']))
+        if move_unsupport:
+            unsupport_openxml_dir = os.path.join(unsupport_dir, 'openxml')
+            support_files = mov_unsupported_files(file_lists['openxml'], unsupport_openxml_dir)
+            file_lists['openxml'] = support_files
         if vbainfo:
-            parse_vba_info(file_lists['openxml'])
+            parse_vba_info(file_lists['openxml'], unique)
         if action:
             openxml_dir = os.path.join(out_dir, 'openxml')
             os.makedirs(openxml_dir)
@@ -258,8 +307,12 @@ def parse_files(filedir, action, vbainfo):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['mhtml']))
+        if move_unsupport:
+            unsupport_mhtml_dir = os.path.join(unsupport_dir, 'mhtml')
+            support_files = mov_unsupported_files(file_lists['mhtml'], unsupport_mhtml_dir)
+            file_lists['mhtml'] = support_files
         if vbainfo:
-            parse_vba_info(file_lists['mhtml'])
+            parse_vba_info(file_lists['mhtml'], unique)
         if action:
             mhtml_dir = os.path.join(out_dir, 'mhtml')
             os.makedirs(mhtml_dir)
@@ -279,8 +332,12 @@ def parse_files(filedir, action, vbainfo):
             name = os.path.basename(filename)
             print name
         print 'Totle number: ' + str(len(file_lists['base64']))
+        if move_unsupport:
+            unsupport_b64mhtml_dir = os.path.join(unsupport_dir, 'b64mhtml')
+            support_files = mov_unsupported_files(file_lists['base64'], unsupport_b64mhtml_dir)
+            file_lists['base64'] = support_files        
         if vbainfo:
-            parse_vba_info(file_lists['base64'])
+            parse_vba_info(file_lists['base64'], unique)
         if action:
             b64mhtml_dir = os.path.join(out_dir, 'b64mhtml')
             os.makedirs(b64mhtml_dir)
@@ -363,34 +420,34 @@ def extract_ole_file(filename):
 if __name__ == '__main__':
 
     init_logging(False)
+
+    parser = argparse.ArgumentParser(description='Macro file classification based on file format')
+    parser.add_argument('directory', action='store', help='path to the sample directory')
+    parser.add_argument('-vi', '--vba-info', action='store_true', help='extract VBA information')
+    parser.add_argument('-u', '--unique', action='store_true', help='remove duplicated VBA information')
+    parser.add_argument('-mu', '--move-unsupport', action='store_true', help='move unsupported files to a separate folder')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-c', '--copy', action='store_true', help='copy files in each group to a separate folder')
+    group.add_argument('-m', '--move', action='store_true', help='move files in each group to a separate folder')
+
+    args = parser.parse_args()
+    action = 0
+    unique = False
+    vbainfo = False
     
-    if len(sys.argv) >= 2 and len(sys.argv) <= 4:
-        action = 0
-        vbainfo = False
-        if len(sys.argv) >= 3:
-            if sys.argv[2] == '-copy' and action == 0:
-                action = 1
-            elif sys.argv[2] == '-move' and action == 0:
-                action = 2
-            elif sys.argv[2] == '-vba' and vbainfo == False:
-                vbainfo = True
-            else:
-                print 'Usage: ' + sys.argv[0] + ' directory [-vba] [-copy/-move]'
-                exit(0)
-        if len(sys.argv) == 4:
-            if sys.argv[3] == '-copy' and action == 0:
-                action = 1
-            elif sys.argv[3] == '-move' and action == 0:
-                action = 2
-            elif sys.argv[3] == '-vba' and vbainfo == False:
-                vbainfo = True
-            else:
-                print 'Usage: ' + sys.argv[0] + ' directory [-vba] [-copy/-move]'
-                exit(0)
-        if os.path.isdir(sys.argv[1]):
-            parse_files(sys.argv[1], action, vbainfo)
-        else:
-            print 'Invalid directory: ' + sys.argv[1]
-    else:
-        print 'Usage: ' + sys.argv[0] + ' directory [-vba] [-copy/-move]'
-        
+    if False == os.path.isdir(args.directory):
+        print 'Invalid directory:', args.directory
+        exit(0)
+
+    if args.vba_info:
+        vbainfo = True
+
+    if vbainfo and args.unique:
+        unique = True
+    
+    if args.copy:
+        action = 1
+    elif args.move:
+        action = 2
+
+    parse_files(args.directory, action, vbainfo, unique, args.move_unsupport)
