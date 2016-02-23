@@ -28,16 +28,19 @@ def check_vba(filename, siglist, no_order):
     
     try:
         vbafile = VBAFile(filename)
-
+        
         vba_code = ''
         for ModuleRecord in vbafile.dir.ModulesRecord.ModuleArray:
             codepage = 'cp' + str(vbafile.dir.InformationRecord.CodePageRecord.CodePage)
             if codepage == 'cp10000':
-                code = vbafile.OLE.find_object_by_name(ModuleRecord.NameRecord.ModuleName.decode('mac_roman'))[ModuleRecord.OffsetRecord.TextOffset:]
+                modulename = ModuleRecord.NameRecord.ModuleName.decode('mac_roman')
             else:
-                code = vbafile.OLE.find_object_by_name(ModuleRecord.NameRecord.ModuleName.decode(codepage))[ModuleRecord.OffsetRecord.TextOffset:]
-            vba_code += vbafile._decompress(code)
-
+                modulename = ModuleRecord.NameRecord.ModuleName.decode(codepage)
+            moduledata = vbafile.OLE.find_object_by_name(modulename)
+            if moduledata is not None and len(moduledata) > ModuleRecord.OffsetRecord.TextOffset:
+                code = moduledata[ModuleRecord.OffsetRecord.TextOffset:]
+                vba_code += vbafile._decompress(code)
+        
         if no_order:
             for sig in siglist:
                 if -1 == vba_code.find(sig):
@@ -191,7 +194,7 @@ if __name__ == '__main__':
         print 'Invalid signature file:', args.sigfile
         exit(0)
     
-    siglist = read_sigs(sys.argv[2])
+    siglist = read_sigs(args.sigfile)
     if not siglist:
         print 'Can not find valid signatures from file:', args.sigfile
         exit(0)
