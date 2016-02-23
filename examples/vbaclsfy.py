@@ -214,7 +214,7 @@ def classify_files(filedir):
 
 
 def mov_unsupported_files(file_list, out_dir):
-
+    
     support_files = list()
     
     for filename in file_list:
@@ -383,7 +383,7 @@ def parse_files(filedir, action, vbainfo, unique, move_unsupport):
 
 
 def extract_ole_file(filename):
-
+    
     data = open(filename, 'rb').read()
     tmp_file = 'tmpole_' + time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 
@@ -401,6 +401,7 @@ def extract_ole_file(filename):
             print filename + ': No vbaProject.bin found in zip arachive.'
         except Exception as e:
             print filename + ': ' + str(e)
+        return None
 
     if data[0x00:0x08] == 'IE1JTUUt':
         m = re.search('IE1JTU[0-9a-zA-Z/+=\x0d\x0a]{1000,}', data)
