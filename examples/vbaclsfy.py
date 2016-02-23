@@ -107,7 +107,10 @@ def vba_info(filename):
             if ModuleRecord.PrivateRecord is not None:
                 print 'Private: True'
             codepage = 'cp' + str(vbafile.dir.InformationRecord.CodePageRecord.CodePage)
-            code = vbafile.OLE.find_object_by_name(ModuleRecord.NameRecord.ModuleName.decode(codepage))[ModuleRecord.OffsetRecord.TextOffset:]
+            if codepage == 'cp10000':
+                code = vbafile.OLE.find_object_by_name(ModuleRecord.NameRecord.ModuleName.decode('mac_roman'))[ModuleRecord.OffsetRecord.TextOffset:]
+            else:
+                code = vbafile.OLE.find_object_by_name(ModuleRecord.NameRecord.ModuleName.decode(codepage))[ModuleRecord.OffsetRecord.TextOffset:]
             print 'SourceCodeSize:', str(hex(len(code)))
             code = vbafile._decompress(code)
             print 'SourceCode:'
