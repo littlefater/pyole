@@ -160,7 +160,7 @@ def extract_ole_file(filename):
             data = base64.b64decode(b64data)
 
     if data.find('MIME-Version') != -1:
-        m = re.search('QWN0aX[0-9a-zA-Z/+=\x0d\x0a]{1000,}', data)
+        m = re.search('Q[\x0d\x0a]*W[\x0d\x0a]*N[\x0d\x0a]*0[\x0d\x0a]*a[\x0d\x0a]*X[0-9a-zA-Z/+=\x0d\x0a\x20]{1000,}', data)
         if m is not None:
             b64data = m.group(0)
             data = base64.b64decode(b64data)
