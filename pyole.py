@@ -925,6 +925,7 @@ class OLEFile(OLEBase):
 
     file_data = None
     sector_size = 0
+    mini_sector_size = 0
 
     OLEHeader = None
     DIFAT = list()
@@ -939,6 +940,7 @@ class OLEFile(OLEBase):
         
         self.file_data = None
         self.sector_size = 0
+        self.mini_sector_size = 0
         
         self.OLEHeader = None
         self.DIFAT = list()
@@ -960,10 +962,15 @@ class OLEFile(OLEBase):
             elif self.OLEHeader.SectorShift == 0x0C:
                 self.sector_size = 4096
             else:
-                self._raise_exception('Invalid SectorSize.')
+                self._raise_exception('Invalid Sector Size.')
+
+            if self.OLEHeader.MiniSectorShift == 0x06:
+                self.mini_sector_size = 64
+            else:
+                self._raise_exception('Invalid MiniSector Size.')
 
             self._init_fat_chain()
-
+            
             if self.OLEHeader.NumberOfMiniFATSectors > 0:
                 self._init_minifat_chain()
 
@@ -1000,8 +1007,8 @@ class OLEFile(OLEBase):
                 difat_sector_index = struct.unpack('<I', self.file_data[difat_sector_offset+j*4:difat_sector_offset+j*4+4])[0]
                     
         if len(self.DIFAT) != self.OLEHeader.NumberOfFATSectors:
-            self._raise_exception('OLEHeader.NumberOfFATSectors does not mahtch the number of the DIFAT entries.')
-           
+            self.ole_logger.warn('OLEHeader.NumberOfFATSectors does not mahtch the number of the DIFAT entries.')
+        
         for i in range(0, self.OLEHeader.NumberOfFATSectors):
             fat_sector_index = self.DIFAT[i]
             fat_sector_offset = (fat_sector_index+1) * self.sector_size
@@ -1017,14 +1024,21 @@ class OLEFile(OLEBase):
     
     def _init_minifat_chain(self):
         minifat_sector_index = self.OLEHeader.FirstMiniFATSector
-        for i in range(0, self.OLEHeader.NumberOfMiniFATSectors):
+        i = 0
+        while i < self.OLEHeader.NumberOfMiniFATSectors:
             minifat_sector_offset = (minifat_sector_index+1) * self.sector_size
+            self.ole_logger.debug('MiniFAT sector #' + str(i) + ' at offset: ' + str(hex(minifat_sector_offset)))
             for j in range(0, self.sector_size/4):
                 minifat = struct.unpack('<I', self.file_data[minifat_sector_offset+j*4:minifat_sector_offset+j*4+4])[0]
-                self.MiniFAT.append(minifat)
+                self.MiniFAT.append(minifat) 
             minifat_sector_index = self.FAT[minifat_sector_index]
-            if minifat_sector_index == 0xFFFFFFFE and (i+1) != self.OLEHeader.NumberOfMiniFATSectors:
-                self._raise_exception('self.OLEHeader.NumberOfMiniFATSectors does not match the length of the MiniFat sector chian.')
+            if minifat_sector_index == 0xFFFFFFFE:
+                self.ole_logger.debug('MiniFAT sector chain ended.')
+                break
+            i += 1
+            
+        if (i+1) != self.OLEHeader.NumberOfMiniFATSectors:
+            self.ole_logger.warn('self.OLEHeader.NumberOfMiniFATSectors does not match the length of the MiniFat sector chian.')     
     
 
     def _init_dir_entry(self):

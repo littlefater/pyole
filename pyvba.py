@@ -657,7 +657,7 @@ class ReferenceNameRecord(VBABase):
         self.Reserved = struct.unpack('<H', data[current:current+0x02])[0]
         self.ole_logger.debug('ReferenceNameRecord.Reserved: ' + str(hex(self.Reserved)))
         if self.Reserved != 0x3E:
-            self._raise_exception('ReferenceNameRecord.Reserved has an abnormal value.')
+            self.ole_logger.warn('ReferenceNameRecord.Reserved has an abnormal value.')
 
         current = current + 0x02
         self.SizeOfNameUnicode = struct.unpack('<I', data[current:current+0x04])[0]
@@ -965,7 +965,7 @@ class ProjectReferencesRecord(VBABase):
                     self.ReferenceArray.append([NameRecord, ProjectRecord])
                 
                 else:
-                    self._raise_exception('ReferencesRecord.Id has an abnormal value.')
+                    self.ole_logger.warn('ReferencesRecord.Id has an abnormal value.')
 
             elif id == 0x2F or id == 0x33:
                 ControlRecord = ReferenceControlRecord(data[current:])
