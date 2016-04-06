@@ -37,9 +37,12 @@ def check_vba(filename, siglist, no_order):
             else:
                 modulename = ModuleRecord.NameRecord.ModuleName.decode(codepage)
             moduledata = vbafile.OLE.find_object_by_name(modulename)
-            if moduledata is not None and len(moduledata) > ModuleRecord.OffsetRecord.TextOffset:
-                code = moduledata[ModuleRecord.OffsetRecord.TextOffset:]
-                vba_code += vbafile._decompress(code)
+            try:
+                if moduledata is not None and len(moduledata) > ModuleRecord.OffsetRecord.TextOffset:
+                    code = moduledata[ModuleRecord.OffsetRecord.TextOffset:]
+                    vba_code += vbafile._decompress(code)
+            except Exception as e:
+                pass
         
         if no_order:
             for sig in siglist:
@@ -146,7 +149,8 @@ def extract_ole_file(filename):
             b64data = m.group(0)
             data = base64.b64decode(b64data)
 
-    if data.find('MIME-Version') != -1:
+    if data.find('MIME-Version') != -1 or \
+       data.find('<?mso-application progid="Word.Document"?>') != -1:
         m = re.search('Q[\x0d\x0a]*W[\x0d\x0a]*N[\x0d\x0a]*0[\x0d\x0a]*a[\x0d\x0a]*X[0-9a-zA-Z/+=\x0d\x0a\x20]{1000,}', data)
         if m is not None:
             b64data = m.group(0)
